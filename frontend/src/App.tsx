@@ -1,12 +1,12 @@
 import React from 'react';
-
+import GameUI from './GameUI';
 
 
 function App() {
 
   return (
     <div>
-      <h1>Duels & Roulette</h1>
+      <GameUI />
     </div>
   );
 }
