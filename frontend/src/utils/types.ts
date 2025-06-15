@@ -1,8 +1,8 @@
 // Status effects a player can have
-export type StatusEffect = 'cuffed' | 'sawed_off' | 'adrenaline' | string;
+export type StatusEffect = 'chained' | 'amplified' | 'thief' | string;
 
 export type ActionMessage = {
-  type: 'shoot' | 'item_used' | 'skip' | string;
+  type: 'drink' | 'artifact_used' | 'skip' | string;
   item?: ItemType;
   userId: string;
   targetId?: string;
@@ -11,14 +11,16 @@ export type ActionMessage = {
 
 // All possible item types
 export type ItemType =
-  | 'magnifying_scope' // use to see if the current shot is live or blank
-  | 'sawed_off_kit' // use to make the gun do 2x damage
-  | 'ejector_tool' // use to eject the current shell and skip the shot
-  | 'restraining_cuffs' // use to restrain an opponent, preventing them from taking actions for one turn
-  | 'first_aid_kit' // use to restore 1 life
-  | 'scout_report' // use to see any random future shell
-  | 'shell_inverter' // use to flip the type of the current shell (live becomes blank, blank becomes live)
-  | 'adrenaline_shot'; // use to steal the opponent's item
+  | 'royal_scrutiny_glass' // use to see if the current shot is poisnous or holy
+  | 'verdict_amplifier' // use to make the goblet twice poisonous or holy
+  | 'crown_disavowal' // use to vaporise current goblet content 
+  | 'royal_chain_order' // use to restrain an opponent, preventing them from taking actions for one turn
+  | 'sovereign_potion' // use to restore 1 life
+  | 'chronicle_ledger' // use to see any random future goblet
+  | 'paradox_dial' // use to flip the type of the current goblet (poisnous becomes holy, holy becomes poisnous)
+  | 'thief_tooth'
+  |string
+  ; // use to steal the opponent's item
 
 // Player/Contestant model
 export interface Contestant {
@@ -31,11 +33,6 @@ export interface Contestant {
   statusEffects: StatusEffect[];
 }
 
-// Game state model
-export enum TurnOrderDirection {
-  Clockwise = 'clockwise',
-  CounterClockwise = 'counter-clockwise',
-}
 
 export type GameStatePhase = 'loading' | 'playing' | 'round_over' | 'game_over';
 
@@ -43,17 +40,17 @@ export interface GameState {
   players: Contestant[];
   currentRound: RoundConfig;
   activePlayerIndex: number;
-  shotgunChambers: boolean[];
-  currentChamberIndex: number;
-  shellsRemaining: number;
-  turnOrderDirection: TurnOrderDirection;
+  goblets: boolean[];
+  currentGobletIndex: number;
+  gobletsRemaining: number;
+  turnOrderDirection: 'clockwise' | 'counter-clockwise';
   gameState: GameStatePhase;
 } 
 
 export type RoundConfig = {
   round: number;
-  liveShells: number;
-  blankShells: number;
+  poisnousGoblets: number;
+  holyGoblets: number;
   lives: number;
   itemCount: number;
   suddenDeath: boolean;

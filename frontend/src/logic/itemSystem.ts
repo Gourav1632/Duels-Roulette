@@ -1,90 +1,86 @@
-  import type { GameState, ItemType, ActionMessage } from '../utils/types';
-  import {  shellCountMemory, shellMemory } from './aiLogic';
+import type { GameState, ItemType, ActionMessage } from '../utils/types';
+import { gobletCountMemory, gobletMemory } from './aiLogic';
 
-  // Magnifying Scope: Reveals the type (Live/Blank) of the current chamber
- export function useMagnifyingScope(game: GameState) {
-  const { shotgunChambers, currentChamberIndex } = game;
-  const isLiveShell = shotgunChambers[currentChamberIndex];
-  if(game.players[game.activePlayerIndex].isAI) {
-    shellMemory[currentChamberIndex] = isLiveShell?'live':'blank'; // Store the shell type in memory
+// Royal Scrutiny Glass: Reveals the type (Poisonous/Holy) of the current goblet
+export function RoyalScrutinyGlass(game: GameState) {
+  const { goblets, currentGobletIndex } = game;
+  const isPoisonous = goblets[currentGobletIndex];
+  if (game.players[game.activePlayerIndex].isAI) {
+    gobletMemory[currentGobletIndex] = isPoisonous ? 'poisonous' : 'holy';
   }
   const actionMessage: ActionMessage = {
-    type: 'item_used',
-    item: 'magnifying_scope',
+    type: 'artifact_used',
+    item: 'royal_scrutiny_glass',
     userId: game.players[game.activePlayerIndex].id,
-    result: isLiveShell ? 'LIVE' : 'BLANK',
-    };
-  return { updatedGame: game, actionMessage: actionMessage};
+    result: isPoisonous ? 'POISONOUS' : 'HOLY',
+  };
+  return { updatedGame: game, actionMessage };
 }
 
-
-  // Sawed-Off Kit: Increases gunDamageMultiplier to 2 for the next successful Live Shell shot
-export function useSawedOffKit(game: GameState) {
-  const {players, activePlayerIndex} = game;
-    const updatedPlayer = {
+// Verdict Amplifier: Doubles the effect of the next poisonous/holy goblet
+export function VerdictAmplifier(game: GameState) {
+  const { players, activePlayerIndex } = game;
+  const updatedPlayer = {
     ...players[activePlayerIndex],
-    statusEffects: [...players[activePlayerIndex].statusEffects, 'sawed_off'],
+    statusEffects: [...players[activePlayerIndex].statusEffects, 'amplified'],
   };
   const updatedPlayers = [...players];
   updatedPlayers[activePlayerIndex] = updatedPlayer;
   const updatedGame = { ...game, players: updatedPlayers };
-  
+
   const actionMessage: ActionMessage = {
-    type: 'item_used',
-    item: 'sawed_off_kit',
-    userId: game.players[game.activePlayerIndex].id,
-    result: 'SAWED_OFF',
+    type: 'artifact_used',
+    item: 'verdict_amplifier',
+    userId: game.players[activePlayerIndex].id,
+    result: 'AMPLIFIED',
   };
-  return { updatedGame, actionMessage: actionMessage};
+  return { updatedGame, actionMessage };
 }
 
-
-  // Ejector Tool: Ejects the shell at currentChamberIndex
-export function useEjectorTool(game: GameState) {
-  const { shotgunChambers, currentChamberIndex, shellsRemaining } = game;
-  const updatedChambers = [...shotgunChambers];
-  const removedShell = updatedChambers.splice(currentChamberIndex, 1)[0];
+// Crown Disavowal: Removes the current goblet
+export function CrownDisavowal(game: GameState) {
+  const { goblets, currentGobletIndex, gobletsRemaining } = game;
+  const updatedGoblets = [...goblets];
+  const removedGoblet = updatedGoblets.splice(currentGobletIndex, 1)[0];
   const updatedGame = {
     ...game,
-    shotgunChambers: updatedChambers,
-    shellsRemaining: shellsRemaining - 1,
+    goblets: updatedGoblets,
+    gobletsRemaining: gobletsRemaining - 1,
   };
-  if(removedShell){
-    shellCountMemory.live--;
-  }else{
-    shellCountMemory.blank--;
+  if (removedGoblet) {
+    gobletCountMemory.poisonousGoblets--; // poison
+  } else {
+    gobletCountMemory.holyGoblets--; // holy
   }
   const actionMessage: ActionMessage = {
-    type: 'item_used',
-    item: 'ejector_tool',
+    type: 'artifact_used',
+    item: 'crown_disavowal',
     userId: game.players[game.activePlayerIndex].id,
-    result: `${removedShell ? 'LIVE' : 'BLANK'}`,
+    result: removedGoblet ? 'POISONOUS' : 'HOLY',
   };
-  return { updatedGame, actionMessage: actionMessage};
+  return { updatedGame, actionMessage };
 }
 
-
-  // Restraining Cuffs: Prevents target opponent from taking their next turn
-export function useRestrainingCuffs(game: GameState, targetPlayerId: string) {
+// Royal Chain Order: Cuffs the target player
+export function RoyalChainOrder(game: GameState, targetPlayerId: string) {
   const updatedPlayers = game.players.map(player =>
     player.id === targetPlayerId
-      ? { ...player, statusEffects: [...player.statusEffects, 'cuffed'] }
+      ? { ...player, statusEffects: [...player.statusEffects, 'chained'] }
       : player
   );
   const updatedGame = { ...game, players: updatedPlayers };
   const actionMessage: ActionMessage = {
-    type: 'item_used',
-    item: 'restraining_cuffs',
+    type: 'artifact_used',
+    item: 'royal_chain_order',
     userId: game.players[game.activePlayerIndex].id,
     targetId: targetPlayerId,
-    result: 'CUFFED',
+    result: 'CHAINED',
   };
-  return { updatedGame, actionMessage: actionMessage};
+  return { updatedGame, actionMessage };
 }
 
-
-  // First-Aid Kit: Restores 1 life to the active player
-export function useFirstAidKit(game: GameState) {
+// Sovereign Potion: Heals 1 life
+export function SovereignPotion(game: GameState) {
   const { players, activePlayerIndex } = game;
   const updatedPlayers = [...players];
   updatedPlayers[activePlayerIndex] = {
@@ -93,113 +89,121 @@ export function useFirstAidKit(game: GameState) {
   };
   const updatedGame = { ...game, players: updatedPlayers };
   const actionMessage: ActionMessage = {
-    type: 'item_used',
-    item: 'first_aid_kit',
-    userId: game.players[game.activePlayerIndex].id,
+    type: 'artifact_used',
+    item: 'sovereign_potion',
+    userId: game.players[activePlayerIndex].id,
     result: 'HEALED',
   };
-
-  return { updatedGame, actionMessage: actionMessage};
+  return { updatedGame, actionMessage };
 }
 
-
-  // Scout Report: Reveals the type (Live/Blank) of a random non-current shell
-export function useScoutReport(game: GameState) {
-  const { shotgunChambers, currentChamberIndex } = game;
-  const availableIndices = shotgunChambers
-    .map((_, index) => index)
-    .filter(index => index !== currentChamberIndex);
+// Chronicle Ledger: Peeks at any random non-current goblet
+export function ChronicleLedger(game: GameState) {
+  const { goblets, currentGobletIndex } = game;
+  const availableIndices = goblets
+    .map((_, i) => i)
+    .filter(i => i !== currentGobletIndex);
   const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-  const isLiveShell = shotgunChambers[randomIndex];
-  if(game.players[game.activePlayerIndex].isAI) {
-    shellMemory[randomIndex] = isLiveShell ? 'live' : 'blank'; // Store the shell type in memory
+  const isPoisonous = goblets[randomIndex];
+  if (game.players[game.activePlayerIndex].isAI) {
+    gobletMemory[randomIndex] = isPoisonous ? 'poisonous' : 'holy';
   }
   const actionMessage: ActionMessage = {
-    type: 'item_used',
-    item: 'scout_report',
+    type: 'artifact_used',
+    item: 'chronicle_ledger',
     userId: game.players[game.activePlayerIndex].id,
-    result: `${isLiveShell ? 'LIVE' : 'BLANK'}:${randomIndex}`,
+    result: `${isPoisonous ? 'POISONOUS' : 'HOLY'}:${randomIndex}`,
   };
-  
-  return { updatedGame: game, actionMessage: actionMessage};
+  return { updatedGame: game, actionMessage };
 }
 
-
-  // Shell Inverter: Flips the type of the current chamber (Live becomes Blank, Blank becomes Live)
-export function useShellInverter(game: GameState) {
-  const { shotgunChambers, currentChamberIndex } = game;
-  const updatedChambers = [...shotgunChambers];
-  updatedChambers[currentChamberIndex] = !updatedChambers[currentChamberIndex];
-  const updatedGame = { ...game, shotgunChambers: updatedChambers };
+// Paradox Dial: Flips current goblet’s type
+export function ParadoxDial(game: GameState) {
+  const { goblets, currentGobletIndex } = game;
+  const updatedGoblets = [...goblets];
+  updatedGoblets[currentGobletIndex] = !updatedGoblets[currentGobletIndex];
+  const updatedGame = { ...game, goblets: updatedGoblets };
   const actionMessage: ActionMessage = {
-    type: 'item_used',
-    item: 'shell_inverter',
+    type: 'artifact_used',
+    item: 'paradox_dial',
     userId: game.players[game.activePlayerIndex].id,
-    result: `${updatedChambers[currentChamberIndex] ? 'LIVE' : 'BLANK'}:INVERTED`,
+    result: `${updatedGoblets[currentGobletIndex] ? 'POISONOUS' : 'HOLY'}:INVERTED`,
   };
-  return { updatedGame, actionMessage: actionMessage};
+  return { updatedGame, actionMessage };
 }
 
-
-  // Adrenaline Shot: If the next shot is a Blank Shell and you shoot yourself, you get to choose whether to take another action or pass the turn
-export function useAdrenalineShot(game: GameState) {
+// Thief Tooth: Steals a random item from target player
+export function ThiefTooth(game: GameState, targetPlayerId: string) {
   const { players, activePlayerIndex } = game;
-  const updatedPlayers = [...players];
-  updatedPlayers[activePlayerIndex] = {
-    ...updatedPlayers[activePlayerIndex],
-    statusEffects: [...updatedPlayers[activePlayerIndex].statusEffects, 'adrenaline'],
+  const thief = players[activePlayerIndex];
+  const targetIndex = players.findIndex(p => p.id === targetPlayerId);
+  const target = players[targetIndex];
+
+  if (!target.items.length) {
+    const actionMessage: ActionMessage = {
+      type: 'artifact_used',
+      item: 'thief_tooth',
+      userId: thief.id,
+      targetId: target.id,
+      result: 'FAILED_NO_ITEMS',
+    };
+    return { updatedGame: game, actionMessage };
+  }
+
+  const stolenIndex = Math.floor(Math.random() * target.items.length);
+  const stolenItem = target.items[stolenIndex];
+
+  const updatedTarget = {
+    ...target,
+    items: [...target.items.slice(0, stolenIndex), ...target.items.slice(stolenIndex + 1)],
   };
+
+  const updatedThief = {
+    ...thief,
+    items: [...thief.items, stolenItem],
+  };
+
+  const updatedPlayers = [...players];
+  updatedPlayers[activePlayerIndex] = updatedThief;
+  updatedPlayers[targetIndex] = updatedTarget;
+
   const updatedGame = { ...game, players: updatedPlayers };
   const actionMessage: ActionMessage = {
-    type: 'item_used',
-    item: 'adrenaline_shot',
-    userId: game.players[activePlayerIndex].id,
-    result: 'ADRENALINE',
+    type: 'artifact_used',
+    item: 'thief_tooth',
+    userId: thief.id,
+    targetId: target.id,
+    result: `STOLEN:${stolenItem}`,
   };
-  return { updatedGame, actionMessage: actionMessage};
+  return { updatedGame, actionMessage };
 }
 
+// Generic item handler
+export function Item(game: GameState, itemType: ItemType, targetPlayerId?: string): { updatedGame: GameState, actionMessage: ActionMessage } {
+  const activePlayer = game.players[game.activePlayerIndex];
+  if (!activePlayer.items.includes(itemType)) {
+    throw new Error(`Item ${itemType} not available or already used this turn`);
+  }
+  const itemIndex = activePlayer.items.findIndex(item => item === itemType);
+  const updatedItems = [...activePlayer.items.slice(0, itemIndex), ...activePlayer.items.slice(itemIndex + 1)];
+  const updatedPlayer = { ...activePlayer, items: updatedItems };
+  const updatedPlayers = [...game.players];
+  updatedPlayers[game.activePlayerIndex] = updatedPlayer;
+  const updatedGame = { ...game, players: updatedPlayers };
 
-  // Generic function to use an item
-  export function useItem(game: GameState, itemType: ItemType, targetPlayerId?: string):{updatedGame : GameState, actionMessage: ActionMessage} {
-    // remove the used item from the player's inventory
-    const activePlayer = game.players[game.activePlayerIndex];
-    if (!activePlayer.items.includes(itemType)) {
-      throw new Error(`Item ${itemType} not available or already used this turn`);
-    }
-    // Remove only one instance of the item
-      const itemIndex = activePlayer.items.findIndex(item => item === itemType);
-      if (itemIndex === -1) {
-        throw new Error(`Item ${itemType} not found in inventory`);
-      }
-      const updatedItems = [
-        ...activePlayer.items.slice(0, itemIndex),
-        ...activePlayer.items.slice(itemIndex + 1)
-      ];
-
-    const updatedPlayer = { ...activePlayer, items: updatedItems};
-    const updatedPlayers = [...game.players];
-    updatedPlayers[game.activePlayerIndex] = updatedPlayer;
-    const updatedGame = { ...game, players: updatedPlayers };
-    switch (itemType) {
-      case 'magnifying_scope':
-        return useMagnifyingScope(updatedGame);
-      case 'sawed_off_kit':
-        return useSawedOffKit(updatedGame);
-      case 'ejector_tool':
-        return useEjectorTool(updatedGame);
-      case 'restraining_cuffs':
-        if (!targetPlayerId) throw new Error('Target player ID required for restraining cuffs');
-        return useRestrainingCuffs(updatedGame, targetPlayerId);
-      case 'first_aid_kit':
-        return useFirstAidKit(updatedGame);
-      case 'scout_report':
-        return useScoutReport(updatedGame);
-      case 'shell_inverter':
-        return useShellInverter(updatedGame);
-      case 'adrenaline_shot':
-        return useAdrenalineShot(updatedGame);
-      default:
-        throw new Error(`Unknown item type: ${itemType}`);
-    }
-  } 
+  switch (itemType) {
+    case 'royal_scrutiny_glass': return RoyalScrutinyGlass(updatedGame);
+    case 'verdict_amplifier': return VerdictAmplifier(updatedGame);
+    case 'crown_disavowal': return CrownDisavowal(updatedGame);
+    case 'royal_chain_order':
+      if (!targetPlayerId) throw new Error('Target required for royal_chain_order');
+      return RoyalChainOrder(updatedGame, targetPlayerId);
+    case 'sovereign_potion': return SovereignPotion(updatedGame);
+    case 'chronicle_ledger': return ChronicleLedger(updatedGame);
+    case 'paradox_dial': return ParadoxDial(updatedGame);
+    case 'thief_tooth':
+      if (!targetPlayerId) throw new Error('Target required for thief_tooth');
+      return ThiefTooth(updatedGame, targetPlayerId);
+    default: throw new Error(`Unknown item: ${itemType}`);
+  }
+}

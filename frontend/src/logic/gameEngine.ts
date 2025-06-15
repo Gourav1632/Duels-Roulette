@@ -1,9 +1,6 @@
-import { use } from 'react';
-import type { RoundConfig,GameState, Contestant, ItemType, GameStatePhase, ActionMessage } from '../utils/types';
-import { TurnOrderDirection } from '../utils/types';
-import { useItem } from './itemSystem';
-import { shellCountMemory } from './aiLogic';
-
+import type { RoundConfig, GameState, Contestant, ItemType, ActionMessage } from '../utils/types';
+import { Item } from './itemSystem';
+import { gobletCountMemory } from './aiLogic';
 
 // Initialize a new game
 export function initializeGame(players: Contestant[]): GameState {
@@ -11,10 +8,10 @@ export function initializeGame(players: Contestant[]): GameState {
     players,
     currentRound: generateRoundConfig(1),
     activePlayerIndex: Math.floor(Math.random() * players.length),
-    shotgunChambers: [],
-    currentChamberIndex: 0,
-    shellsRemaining: 0,
-    turnOrderDirection: TurnOrderDirection.Clockwise,
+    goblets: [],
+    currentGobletIndex: 0,
+    gobletsRemaining: 0,
+    turnOrderDirection: 'clockwise',
     gameState: 'loading',
   };
 }
@@ -23,18 +20,17 @@ export function initializeGame(players: Contestant[]): GameState {
 export function startRound(game: GameState, roundNumber: number): GameState {
   const roundConfig = generateRoundConfig(roundNumber);
   if (!roundConfig) throw new Error(`Invalid round number: ${roundNumber}`);
-  
-  const { liveShells, blankShells, lives } = roundConfig;
-  
-  shellCountMemory.live = liveShells;
-  shellCountMemory.blank = blankShells
 
-  const chambers: boolean[] = [];
-  for (let i = 0; i < liveShells; i++) chambers.push(true);
-  for (let i = 0; i < blankShells; i++) chambers.push(false);
-  shuffleArray(chambers);
+  const { poisnousGoblets, holyGoblets } = roundConfig;
 
-  // Distribute items based on round
+  gobletCountMemory.poisonousGoblets = poisnousGoblets;
+  gobletCountMemory.holyGoblets = holyGoblets;
+
+  const goblets: boolean[] = [];
+  for (let i = 0; i < poisnousGoblets; i++) goblets.push(true);
+  for (let i = 0; i < holyGoblets; i++) goblets.push(false);
+  shuffleArray(goblets);
+
   const itemsPerPlayer = roundConfig.itemCount;
   const updatedPlayers = game.players.map(player => ({
     ...player,
@@ -45,9 +41,9 @@ export function startRound(game: GameState, roundNumber: number): GameState {
 
   return {
     ...game,
-    shotgunChambers: chambers,
-    currentChamberIndex: 0,
-    shellsRemaining: chambers.length,
+    goblets,
+    currentGobletIndex: 0,
+    gobletsRemaining: goblets.length,
     players: updatedPlayers,
     gameState: 'playing',
     currentRound: roundConfig,
@@ -55,98 +51,92 @@ export function startRound(game: GameState, roundNumber: number): GameState {
 }
 
 // Play a turn
-export function playTurn(game: GameState, action: { type: 'shoot' | 'use_item' | string; targetPlayerId?: string; itemType?: ItemType }):  { updatedGame: GameState, actionMessage: ActionMessage } {
-  const { activePlayerIndex, players, shotgunChambers, currentChamberIndex, turnOrderDirection } = game;
+export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' | string; targetPlayerId?: string; itemType?: ItemType }): { updatedGame: GameState, actionMessage: ActionMessage } {
+  const { activePlayerIndex, players, goblets, currentGobletIndex, turnOrderDirection } = game;
   const activePlayer = players[activePlayerIndex];
 
-
-  if (action.type === 'shoot') {
+  if (action.type === 'drink') {
     const targetPlayerId = action.targetPlayerId;
     const targetPlayerIndex = players.findIndex(p => p.id === targetPlayerId);
     if (targetPlayerIndex === -1) {
-      return { updatedGame: game, actionMessage: { type: 'shoot', userId: activePlayer.id, result: 'Target player not found.' } };
+      return { updatedGame: game, actionMessage: { type: 'drink', userId: activePlayer.id, result: 'Target player not found.' } };
     }
 
-    let updatedPlayers = [...players];
-    const hasSawedOff = activePlayer.statusEffects.includes('sawed_off');
+    const updatedPlayers = [...players];
+    const hasAmplified = activePlayer.statusEffects.includes('amplified');
 
-    // 1️⃣ Consume sawed_off unconditionally
-    if (hasSawedOff) {
+    if (hasAmplified) {
       updatedPlayers[activePlayerIndex] = {
         ...activePlayer,
-        statusEffects: activePlayer.statusEffects.filter(e => e !== 'sawed_off'),
+        statusEffects: activePlayer.statusEffects.filter(e => e !== 'amplified'),
       };
     }
 
-    const isLiveShell = shotgunChambers[currentChamberIndex];
-      if (isLiveShell) {
-      // Live: apply damage (2 if sawed_off was present, else 1)
-      const damage = hasSawedOff ? 2 : 1;
+    const isPoisonous = goblets[currentGobletIndex];
+    if (isPoisonous) {
+      const damage = hasAmplified ? 2 : 1;
       updatedPlayers[targetPlayerIndex] = {
         ...updatedPlayers[targetPlayerIndex],
         lives: updatedPlayers[targetPlayerIndex].lives - damage,
       };
     } else {
-      // Blank shell
       if (targetPlayerIndex === activePlayerIndex) {
-        // Self‑shot blank → extra turn
         const nextGame = {
           ...game,
           players: updatedPlayers,
-          currentChamberIndex: (currentChamberIndex + 1) % shotgunChambers.length,
-          shellsRemaining: game.shellsRemaining - 1,
+          currentGobletIndex: (currentGobletIndex + 1) % goblets.length,
+          gobletsRemaining: game.gobletsRemaining - 1,
         };
         return {
           updatedGame: nextGame,
           actionMessage: {
-            type: 'shoot',
+            type: 'drink',
             userId: activePlayer.id,
             targetId: targetPlayerId,
-            result: 'BLANK',
+            result: 'HOLY',
           },
         };
       }
     }
-    // Pass turn to next player
-    let UpdatedGame = {
+
+    const updatedGame = {
       ...game,
       players: updatedPlayers,
-      currentChamberIndex: (currentChamberIndex + 1) % shotgunChambers.length,
-      shellsRemaining: game.shellsRemaining - 1,
+      currentGobletIndex: (currentGobletIndex + 1) % goblets.length,
+      gobletsRemaining: game.gobletsRemaining - 1,
       activePlayerIndex: getNextPlayerIndex(activePlayerIndex, players.length, turnOrderDirection),
     };
 
-    if(isLiveShell){
-      shellCountMemory.live--;
-    }else{
-      shellCountMemory.blank--;
+    if (isPoisonous) {
+      gobletCountMemory.poisonousGoblets--;
+    } else {
+      gobletCountMemory.holyGoblets--;
     }
 
     return {
-      updatedGame: UpdatedGame,
+      updatedGame,
       actionMessage: {
-        type: 'shoot',
+        type: 'drink',
         userId: activePlayer.id,
         targetId: targetPlayerId,
-        result: isLiveShell ? `LIVE`:`BLANK`,
-        }
-    }
+        result: isPoisonous ? 'POISON' : 'HOLY',
+      }
+    };
   } else if (action.type === 'use_item' && action.itemType) {
-    // Handle item usage
     const itemType = action.itemType;
-    if (!activePlayer.items.includes(itemType)) return { updatedGame: game, actionMessage: { type: 'item_used', userId: activePlayer.id, result: `Item ${itemType} not found in inventory.` } };
+    if (!activePlayer.items.includes(itemType))
+      return { updatedGame: game, actionMessage: { type: 'artifact_used', userId: activePlayer.id, result: `Item ${itemType} not found.` } };
 
-    let updatedGame = useItem(game, itemType, action.targetPlayerId);
-
+    const updatedGame = Item(game, itemType, action.targetPlayerId);
     return updatedGame;
   }
 
-  return { updatedGame: game, actionMessage: { type: 'shoot', userId: activePlayer.id, result: 'Invalid action type.' } };
+  return { updatedGame: game, actionMessage: { type: 'drink', userId: activePlayer.id, result: 'Invalid action type.' } };
 }
 
 // End a round
-export function nextRound(game: GameState,roundNumber :number): GameState {
-  const { players} = game;
+export function nextRound(game: GameState, roundNumber: number): GameState {
+  const { players } = game;
   const nextRoundConfig = generateRoundConfig(roundNumber);
   if (!nextRoundConfig) throw new Error(`Invalid round number: ${roundNumber}`);
   if (players.length <= 1) {
@@ -160,7 +150,6 @@ export function nextRound(game: GameState,roundNumber :number): GameState {
   };
 }
 
-// Helper function to shuffle an array
 function shuffleArray<T>(array: T[]): void {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -168,60 +157,54 @@ function shuffleArray<T>(array: T[]): void {
   }
 }
 
-// Helper function to get random items
 function getRandomItems(count: number): ItemType[] {
   const allItems: ItemType[] = [
-    'magnifying_scope',
-    'sawed_off_kit',
-    'ejector_tool',
-    'restraining_cuffs',
-    'first_aid_kit',
-    'scout_report',
-    'shell_inverter',
-    'adrenaline_shot',
+    'royal_scrutiny_glass',
+    'verdict_amplifier',
+    'crown_disavowal',
+    'royal_chain_order',
+    'sovereign_potion',
+    'chronicle_ledger',
+    'paradox_dial',
+    'thief_tooth',
   ];
   const shuffled = [...allItems];
   shuffleArray(shuffled);
   return shuffled.slice(0, count);
 }
 
-// Helper function to get the next player index
-export function getNextPlayerIndex(currentIndex: number, totalPlayers: number, direction: TurnOrderDirection): number {
-  if (direction === TurnOrderDirection.Clockwise) {
-    return (currentIndex + 1) % totalPlayers;
-  } else {
-    return (currentIndex - 1 + totalPlayers) % totalPlayers;
-  }
+export function getNextPlayerIndex(currentIndex: number, totalPlayers: number, direction: string): number {
+  return direction === 'clockwise'
+    ? (currentIndex + 1) % totalPlayers
+    : (currentIndex - 1 + totalPlayers) % totalPlayers;
 }
 
-
 export function generateRoundConfig(round: number): RoundConfig {
-  let liveShells = 1;
-  let blankShells = 1;
+  let poisnousGoblets = 1;
+  let holyGoblets = 1;
   let lives = 2;
   let itemCount = 0;
   let suddenDeath = false;
 
   if (round === 1) {
-    liveShells = 1 + Math.floor(Math.random() * 2); // 1 or 2
-    blankShells = 1 + Math.floor(Math.random() * 2); // 1 or 2
+    poisnousGoblets = 1 + Math.floor(Math.random() * 2);
+    holyGoblets = 1 + Math.floor(Math.random() * 2);
     lives = 2;
     itemCount = 0;
   } else if (round === 2) {
-    liveShells = 2 + Math.floor(Math.random() * 2); // 2 or 3
-    blankShells = 2 + Math.floor(Math.random() * 2); // 2 or 3
+    poisnousGoblets = 2 + Math.floor(Math.random() * 2);
+    holyGoblets = 2 + Math.floor(Math.random() * 2);
     lives = 4;
     itemCount = 2;
   } else if (round === 3) {
-    liveShells = 3 + Math.floor(Math.random() * 2); // 3 or 4
-    blankShells = 3 + Math.floor(Math.random() * 2); // 3 or 4
-    lives =5;
+    poisnousGoblets = 3 + Math.floor(Math.random() * 2);
+    holyGoblets = 3 + Math.floor(Math.random() * 2);
+    lives = 5;
     itemCount = 4;
     suddenDeath = true;
   } else {
-    // For rounds beyond 3, continue scaling difficulty
-    liveShells = 2 + Math.floor(Math.random() * 3); // 3 to 5
-    blankShells = 2 + Math.floor(Math.random() * 3); // 2 to 4
+    poisnousGoblets = 2 + Math.floor(Math.random() * 3);
+    holyGoblets = 2 + Math.floor(Math.random() * 3);
     lives = 6;
     itemCount = 2 + Math.floor(round / 2);
     suddenDeath = true;
@@ -229,8 +212,8 @@ export function generateRoundConfig(round: number): RoundConfig {
 
   return {
     round,
-    liveShells,
-    blankShells,
+    poisnousGoblets,
+    holyGoblets,
     lives,
     itemCount,
     suddenDeath,
@@ -239,14 +222,14 @@ export function generateRoundConfig(round: number): RoundConfig {
 
 export function refillChambers(game: GameState): GameState {
   const sameRoundConfig = generateRoundConfig(game.currentRound.round);
-  const newChambers: boolean[] = [];
+  const newGoblets: boolean[] = [];
 
-  shellCountMemory.live = sameRoundConfig.liveShells;
-  shellCountMemory.blank = sameRoundConfig.blankShells;
+  gobletCountMemory.poisonousGoblets = sameRoundConfig.poisnousGoblets;
+  gobletCountMemory.holyGoblets = sameRoundConfig.holyGoblets;
 
-  for (let i = 0; i < sameRoundConfig.liveShells; i++) newChambers.push(true);
-  for (let i = 0; i < sameRoundConfig.blankShells; i++) newChambers.push(false);
-  shuffleArray(newChambers);
+  for (let i = 0; i < sameRoundConfig.poisnousGoblets; i++) newGoblets.push(true);
+  for (let i = 0; i < sameRoundConfig.holyGoblets; i++) newGoblets.push(false);
+  shuffleArray(newGoblets);
 
   const itemsPerPlayer = sameRoundConfig.itemCount;
   const updatedPlayers = game.players.map(player => ({
@@ -258,21 +241,20 @@ export function refillChambers(game: GameState): GameState {
   return {
     ...game,
     players: updatedPlayers,
-    shotgunChambers: newChambers,
-    currentChamberIndex: 0,
-    shellsRemaining: newChambers.length,
+    goblets: newGoblets,
+    currentGobletIndex: 0,
+    gobletsRemaining: newGoblets.length,
   };
 }
 
-
-export const skipIfCuffed = (
+export const skipIfChained = (
   game: GameState,
   player: Contestant
 ): { updatedGame: GameState; actionMessage: ActionMessage } | null => {
-  if (player.statusEffects.includes('cuffed')) {
+  if (player.statusEffects.includes('chained')) {
     const updatedPlayers = game.players.map((p, idx) =>
       idx === game.activePlayerIndex
-        ? { ...p, statusEffects: p.statusEffects.filter(effect => effect !== 'cuffed') } // Remove cuff after 1 turn
+        ? { ...p, statusEffects: p.statusEffects.filter(effect => effect !== 'chained') }
         : p
     );
 
@@ -291,10 +273,10 @@ export const skipIfCuffed = (
       actionMessage: {
         type: 'skip',
         userId: player.id,
-        result: 'Player is cuffed and skips turn.',
+        result: 'Player is chained and skips turn.',
       },
     };
   }
 
-  return null; // Explicitly return null if not cuffed
+  return null;
 };

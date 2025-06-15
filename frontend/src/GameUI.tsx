@@ -1,14 +1,13 @@
-import { useState,useEffect} from "react";
+import { useState, useEffect } from "react";
 import {
   initializeGame,
   startRound,
   playTurn,
   refillChambers,
-  skipIfCuffed
+  skipIfChained
 } from "./logic/gameEngine";
-import type { ActionMessage,ItemType, Contestant, GameState } from "./utils/types";
+import type { ActionMessage, ItemType, Contestant, GameState } from "./utils/types";
 import { automatonTakeTurn } from "./logic/aiLogic";
-import { set } from "react-hook-form";
 
 function GameUI() {
   const [players, setPlayers] = useState<Contestant[]>([]);
@@ -16,257 +15,228 @@ function GameUI() {
   const [log, setLog] = useState<string[]>([]);
   const [canStealItem, setCanStealItem] = useState<boolean>(false);
 
-
-function checkDeathsAndAdvance(game: GameState, setGame: (g: GameState) => void, addLog: (msg: string) => void) {
-  const deadPlayers = game.players.filter(p => p.lives <= 0);
-
-  if (deadPlayers.length > 0) {
+  function checkDeathsAndAdvance(game: GameState, setGame: (g: GameState) => void, addLog: (msg: string) => void) {
+    const deadPlayers = game.players.filter(p => p.lives <= 0);
+    if (deadPlayers.length > 0) {
       const nextround = game.currentRound.round + 1;
-      addLog(`Eliminated: ${deadPlayers.map(p => p.name).join(", ")}`);
-      addLog(`Round ${nextround} begins!`);
-      setGame(startRound(game, nextround ));
-  } else {
-    setGame(game); // No one died, just update state normally
-  }
-}
-
-function renderGameLogMessage(msg: ActionMessage, players: Contestant[]): string {
-  const user = players.find(p => p.id === msg.userId);
-  const target = msg.targetId ? players.find(p => p.id === msg.targetId) : null;
-
-  if(msg.type === 'skip') {
-    return `${user?.name} is cuffed. Turn skipped.`;
-  }
-  if (msg.type === 'shoot') {
-    if (msg.userId === msg.targetId) {
-      return `${user?.name} shot themselves with a ${msg.result?.toLowerCase()} round.`;
+      addLog(`☠️ Eliminated: ${deadPlayers.map(p => p.name).join(", ")}`);
+      addLog(`🕯️ Round ${nextround} begins in the royal court.`);
+      setGame(startRound(game, nextround));
     } else {
-      return `${user?.name} shot ${target?.name} with a ${msg.result?.toLowerCase()} round.`;
+      setGame(game);
     }
   }
 
-  if (msg.type === 'item_used' && msg.item) {
-    switch (msg.item) {
-      case 'ejector_tool':
-        return `${user?.name} ejected a ${msg.result?.toLowerCase()} shell.`;
-      case 'restraining_cuffs':
-        return `${user?.name} cuffed ${target?.name}, skipping their next turn.`;
-      case 'first_aid_kit':
-        return `${user?.name} used a First Aid Kit to heal.`;
-      case 'magnifying_scope':
-        return `${user?.name} inspected the chamber — it's ${msg.result?.toLowerCase()}.`;
-      case 'scout_report':
-        return `${user?.name} scouted a random shell — it's ${msg.result?.toLowerCase()}.`;
-      case 'shell_inverter':
-        return `${user?.name} flipped the shell in the chamber.`;
-      case 'sawed_off_kit':
-        return `${user?.name} loaded the Sawed-Off Kit for double damage.`;
-      case 'adrenaline_shot':
-        return `${user?.name} injected an Adrenaline Shot.`;
-      default:
-        return `${user?.name} used an unknown item.`;
+  function renderGameLogMessage(msg: ActionMessage, players: Contestant[]): string {
+    const user = players.find(p => p.id === msg.userId);
+    const target = msg.targetId ? players.find(p => p.id === msg.targetId) : null;
+
+    if (msg.type === 'skip') {
+      return `${user?.name} was bound by royal chains. Turn forfeited.`;
     }
+
+    if (msg.type === 'drink') {
+      if (msg.userId === msg.targetId) {
+        return `${user?.name} sipped their goblet — it was ${msg.result?.toLowerCase()}.`;
+      } else {
+        return `${user?.name} forced ${target?.name} to drink — it was ${msg.result?.toLowerCase()}.`;
+      }
+    }
+
+    if (msg.type === 'artifact_used' && msg.item) {
+      switch (msg.item) {
+        case 'royal_scrutiny_glass':
+          return `${user?.name} examined a goblet using the Royal Scrutiny Glass — it is ${msg.result?.toLowerCase()}.`;
+        case 'verdict_amplifier':
+          return `${user?.name} invoked the Verdict Amplifier — the effect intensifies.`;
+        case 'crown_disavowal':
+          return `${user?.name} vaporized the goblet’s contents with the Crown Disavowal.`;
+        case 'royal_chain_order':
+          return `${user?.name} bound ${target?.name} with a Royal Chain Order.`;
+        case 'sovereign_potion':
+          return `${user?.name} consumed a Sovereign Potion and regained strength.`;
+        case 'chronicle_ledger':
+          return `${user?.name} consulted the Chronicle Ledger — the future goblet is ${msg.result?.toLowerCase()}.`;
+        case 'paradox_dial':
+          return `${user?.name} twisted the Paradox Dial — fate has reversed.`;
+        case 'thief_tooth':
+          return `${user?.name} used the Thief’s Tooth to steal an artifact from ${target?.name}.`;
+        default:
+          return `${user?.name} invoked an unknown artifact.`;
+      }
+    }
+
+    return '⚠️ Unknown royal action.';
   }
-  return 'Unknown action.';
-}
 
+  useEffect(() => {
+    if (!game) return;
 
-useEffect(() => {
-  if (!game) return;
+    const active = game.players[game.activePlayerIndex];
 
-  const active = game.players[game.activePlayerIndex];
-
-  // 1. Handle cuffed skip
-  const skipResult = skipIfCuffed(game, active);
-  if (skipResult) {
-    const { updatedGame, actionMessage } = skipResult;
-    setGame(updatedGame);
-    setLog(prev => [...prev, renderGameLogMessage(actionMessage, updatedGame.players)]);
-    checkDeathsAndAdvance(updatedGame, setGame, (msg) =>
-      setLog(prev => [...prev, msg])
-    );
-    return; // important: prevents AI logic from running
-  }
-
-  if(active.statusEffects.includes("adrenaline")) {
-    setCanStealItem(true);
-  }
-  // 2. Handle refill
-  if (game.shellsRemaining === 0 && game.gameState === "playing") {
-    setLog(prev => [...prev, "🔁 Shotgun empty! Refilling..."]);
-    setGame(refillChambers(game));
-    return;
-  }
-
-  // 3. AI Turn (only happens if not skipped or refilled)
-  if (
-    game.gameState === "playing" &&
-    active.isAI &&
-    game.shellsRemaining > 0
-  ) {
-    setLog(prev => [...prev, "Automaton is taking its turn..."]);
-
-    setTimeout(() => {
-      const { updatedGame, actionMessage } = automatonTakeTurn(game);
-
-      setLog(prev => [
-        ...prev,
-        renderGameLogMessage(actionMessage, updatedGame.players),
-        ...(updatedGame.gameState === "round_over"
-          ? [`Round ${updatedGame.currentRound.round} is over.`]
-          : []),
-        ...(updatedGame.gameState === "game_over" ? ["Game Over!"] : [])
-      ]);
-
+    const skipResult = skipIfChained(game, active);
+    if (skipResult) {
+      const { updatedGame, actionMessage } = skipResult;
       setGame(updatedGame);
-
-      checkDeathsAndAdvance(updatedGame, setGame, (msg) =>
-        setLog((prev) => [...prev, msg])
+      setLog(prev => [...prev, renderGameLogMessage(actionMessage, updatedGame.players)]);
+      checkDeathsAndAdvance(updatedGame, setGame, msg =>
+        setLog(prev => [...prev, msg])
       );
-    }, 1000);
-  }
-}, [game]);
+      return;
+    }
 
+    if (active.statusEffects.includes("thief")) {
+      setCanStealItem(true);
+    }
 
+    if (game.gobletsRemaining === 0 && game.gameState === "playing") {
+      setLog(prev => [...prev, "🔁 Goblets have been emptied. Refilling with new fate..."]);
+      setGame(refillChambers(game));
+      return;
+    }
 
+    if (
+      game.gameState === "playing" &&
+      active.isAI &&
+      game.gobletsRemaining > 0
+    ) {
+      setLog(prev => [...prev, "🤖 The Court Automaton is deciding its move..."]);
 
+      setTimeout(() => {
+        const { updatedGame, actionMessage } = automatonTakeTurn(game);
 
-useEffect(() => {
-  const humanPlayer: Contestant = {
-    id: "human",
-    name: "You",
-    lives: 3,
-    items: [],
-    isAI: false,
-    isOnline: true,
-    statusEffects: [],
-  };
+        setLog(prev => [
+          ...prev,
+          renderGameLogMessage(actionMessage, updatedGame.players),
+          ...(updatedGame.gameState === "round_over"
+            ? [`📜 Round ${updatedGame.currentRound.round} concludes.`]
+            : []),
+          ...(updatedGame.gameState === "game_over" ? ["🏁 The Court has spoken. Game Over."] : [])
+        ]);
 
-  const automatonPlayer: Contestant = {
-    id: "automaton",
-    name: "Automaton Enforcer",
-    lives: 3,
-    items: [],
-    isAI: true,
-    isOnline: false,
-    statusEffects: [],
-  };
+        setGame(updatedGame);
+        checkDeathsAndAdvance(updatedGame, setGame, msg =>
+          setLog(prev => [...prev, msg])
+        );
+      }, 1000);
+    }
+  }, [game]);
 
-  const gamePlayers = [humanPlayer, automatonPlayer];
-  setPlayers(gamePlayers);
+  useEffect(() => {
+    const humanPlayer: Contestant = {
+      id: "human",
+      name: "You, The Accused",
+      lives: 3,
+      items: [],
+      isAI: false,
+      isOnline: true,
+      statusEffects: [],
+    };
 
-  const initialized = initializeGame(gamePlayers);
-  const started = startRound(initialized,2);
-  setGame(started);
+    const automatonPlayer: Contestant = {
+      id: "automaton",
+      name: "Court Automaton",
+      lives: 3,
+      items: [],
+      isAI: true,
+      isOnline: false,
+      statusEffects: [],
+    };
 
-  const liveShells = started.shotgunChambers.filter(Boolean).length;
-  const blankShells = started.shotgunChambers.filter(s => !s).length;
+    const gamePlayers = [humanPlayer, automatonPlayer];
+    setPlayers(gamePlayers);
 
-  let logMessages = [
-    'Game started.',
-    `Round ${started.currentRound.round} started with ${liveShells} live shells and ${blankShells} blank shells.`
-  ];
+    const initialized = initializeGame(gamePlayers);
+    const started = startRound(initialized, 2);
+    setGame(started);
 
-  const active = started.players[started.activePlayerIndex];
-  if (!active.isAI) {
-    logMessages.push("It's your turn!");
+    const poisonGoblets = started.goblets.filter(Boolean).length;
+    const holyGoblets = started.goblets.filter((s:boolean) => !s).length;
+
+    const logMessages = [
+      '🏰 The King’s Court has assembled.',
+      `📜 Round ${started.currentRound.round} begins with ${poisonGoblets} poisonous and ${holyGoblets} holy goblets.`
+    ];
+
+    const active = started.players[started.activePlayerIndex];
+    if (!active.isAI) {
+      logMessages.push("🫵 It is your turn, noble accused.");
+    }
     setLog(logMessages);
-  }
-}, []);
+  }, []);
 
-
-
-    function getShellText(shell: boolean | null, index: number): string {
-    if (shell === true) {
-        return "LIVE";
-    } else if (shell === false) {
-        return "BLANK";
-    } else {
-        return `?`;
-    }
-    }
-
-const handleShoot = (targetIndex: number) => {
-  if (!game || game.gameState !== "playing") return;
-
-  const targetPlayer = game.players[targetIndex];
-  const action = {
-    type: "shoot",
-    targetPlayerId: targetPlayer.id,
+  const getGobletText = (goblet: boolean | null): string => {
+    if (goblet === true) return "☠️ Poisonous";
+    if (goblet === false) return "✨ Holy";
+    return "❓ Unknown";
   };
 
+  const handleDrink = (targetIndex: number) => {
+    if (!game || game.gameState !== "playing") return;
 
-  const {updatedGame,actionMessage} = playTurn(game, action);
-
-  setLog(prev => [...prev, renderGameLogMessage(actionMessage, updatedGame.players)]);
-
-  // Update game state
-  setGame(updatedGame);
-
-    checkDeathsAndAdvance(updatedGame, setGame, (msg) =>
-    setLog((prev) => [...prev, msg])
-  );
-
-  // Add round/game over messages
-  if (updatedGame.gameState === "round_over") {
-    setLog(prev => [...prev, `Round ${updatedGame.currentRound.round} is over.`]);
-  } else if (updatedGame.gameState === "game_over") {
-    setLog(prev => [...prev, "Game Over!"]);
-  }
-
-};
-
-
-    const handleUseItem = (item: string, targetIndex: number) => {
-    if (!game || game.gameState !== "playing") return;  
     const targetPlayer = game.players[targetIndex];
     const action = {
-        type: "use_item",
-        itemType: item as any, // Cast to ItemType
-        targetPlayerId: targetPlayer.id,
+      type: "drink",
+      targetPlayerId: targetPlayer.id,
     };
-    setLog(prev => [
-        ...prev,
-        `You used ${item.replace(/_/g, " ")}.`,
-    ]);
-    const {updatedGame,actionMessage} = playTurn(game, action);
+
+    const { updatedGame, actionMessage } = playTurn(game, action);
     setLog(prev => [...prev, renderGameLogMessage(actionMessage, updatedGame.players)]);
     setGame(updatedGame);
 
-}
-const getShellColor = (shell, index) => {
-  // Your logic to determine shell color (e.g., based on revealedShells or current/next chamber)
-  // This example just shows unknown shells
-  return 'bg-gray-400';
-};
+    checkDeathsAndAdvance(updatedGame, setGame, msg =>
+      setLog(prev => [...prev, msg])
+    );
 
-function stealItem(item: ItemType, targetPlayerIndex: number) {
-  const currentGame = structuredClone(game);
-
-  const activePlayer = currentGame.players[currentGame.activePlayerIndex];
-  const targetPlayer = currentGame.players[targetPlayerIndex];
-
-  const itemIndex = targetPlayer.items.indexOf(item);
-  if (itemIndex === -1) return;
-
-  // Transfer the item
-  targetPlayer.items.splice(itemIndex, 1);
-  activePlayer.items.push(item);
-
-  currentGame.players[currentGame.activePlayerIndex] = activePlayer;
-  currentGame.players[targetPlayerIndex] = targetPlayer;
-
-  // Register and log the action
-  const action = {
-    type: "use_item",
-    itemType: item,
-    targetPlayerId: targetPlayer.id,
+    if (updatedGame.gameState === "round_over") {
+      setLog(prev => [...prev, `📜 Round ${updatedGame.currentRound.round} ends.`]);
+    } else if (updatedGame.gameState === "game_over") {
+      setLog(prev => [...prev, "🏁 Justice has been served."]);
+    }
   };
-  const { updatedGame, actionMessage } = playTurn(currentGame, action);
-  setLog(prev => [...prev, renderGameLogMessage(actionMessage, updatedGame.players)]);
-  setGame(updatedGame);
-  setCanStealItem(false);
-}
+
+  const handleUseItem = (item: ItemType, targetIndex: number) => {
+    if (!game || game.gameState !== "playing") return;
+    const targetPlayer = game.players[targetIndex];
+    const action = {
+      type: "use_item",
+      itemType: item,
+      targetPlayerId: targetPlayer.id,
+    };
+
+    const { updatedGame, actionMessage } = playTurn(game, action);
+    setLog(prev => [
+      ...prev,
+      `📦 You used ${item.replace(/_/g, " ")}.`,
+      renderGameLogMessage(actionMessage, updatedGame.players)
+    ]);
+    setGame(updatedGame);
+  };
+
+  const stealItem = (item: ItemType, targetIndex: number) => {
+    const currentGame = structuredClone(game);
+    if(!currentGame) return;
+    const activePlayer = currentGame.players[currentGame.activePlayerIndex];
+    const targetPlayer = currentGame.players[targetIndex];
+
+    const itemIndex = targetPlayer.items.indexOf(item);
+    if (itemIndex === -1) return;
+
+    targetPlayer.items.splice(itemIndex, 1);
+    activePlayer.items.push(item);
+
+    const action = {
+      type: "use_item",
+      itemType: item,
+      targetPlayerId: targetPlayer.id,
+    };
+
+    const { updatedGame, actionMessage } = playTurn(currentGame, action);
+    setLog(prev => [...prev, renderGameLogMessage(actionMessage, updatedGame.players)]);
+    setGame(updatedGame);
+    setCanStealItem(false);
+  };
+
 
 
 
@@ -282,7 +252,7 @@ function stealItem(item: ItemType, targetPlayerIndex: number) {
             Round: {game.currentRound.round} 
           </div>
           <div className="text-xl font-semibold">
-            Shells Remaining: {game.shellsRemaining}
+            Shells Remaining: {game.gobletsRemaining}
           </div>
         </div>
 
@@ -308,7 +278,7 @@ function stealItem(item: ItemType, targetPlayerIndex: number) {
             <p className="text-md mt-2">Items:</p>
             <div className="flex flex-wrap gap-2 mt-1">
               {game.players[0].items.length > 0 ? (
-                game.players[0].items.map((item, index) => (
+                game.players[0].items.map((item:ItemType, index:number) => (
                   <span
                     key={index}
                     className="bg-gray-600 text-gray-200 text-sm px-2 py-1 rounded-md"
@@ -343,9 +313,9 @@ function stealItem(item: ItemType, targetPlayerIndex: number) {
             <p className="text-md mt-2">Items:</p>
             <div className="flex flex-wrap gap-2 mt-1">
               {game.players[1].items.length > 0 ? (
-                game.players[1].items.map((item, index) => (
+                game.players[1].items.map((item:ItemType, index:number) => (
                   <button
-                    disabled={!canStealItem || item === "adrenaline_shot"}
+                    disabled={!canStealItem || item === "thief_tooth"}
                     onClick={() => stealItem(item,1)}
                     key={index}
                     className={`bg-gray-600 text-gray-200 text-sm px-2 py-1 rounded-md transition-opacity ${
@@ -365,21 +335,20 @@ function stealItem(item: ItemType, targetPlayerIndex: number) {
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-bold mb-4">Shotgun Chambers</h2>
           <div className="flex justify-center items-center gap-2 flex-wrap">
-            {game.shotgunChambers
-              .slice(game.currentChamberIndex)
-              .map((shell, index) => (
+            {game.goblets
+              .slice(game.currentGobletIndex)
+              .map((goblet:boolean, index:number) => (
                 <div
-                  key={index + game.currentChamberIndex}
-                  className={`w-16 h-16 rounded-full flex items-center justify-center text-xs font-bold text-gray-900 transition-colors duration-200 ${getShellColor(shell, index + game.currentChamberIndex)}`}
+                  key={index + game.currentGobletIndex}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center text-xs font-bold text-gray-900 transition-colors duration-200 `}
                 >
-                  {getShellText(
-                    shell,
-                    index + game.currentChamberIndex
+                  {getGobletText(
+                    goblet
                   )}
                 </div>
               ))}
           </div>
-          {game.shellsRemaining === 0 && (
+          {game.gobletsRemaining === 0 && (
             <p className="text-red-400 text-lg mt-4">
               All shells used in this round!
             </p>
@@ -394,18 +363,18 @@ function stealItem(item: ItemType, targetPlayerIndex: number) {
               <h2 className="text-2xl font-bold mb-4">Your Actions</h2>
               <div className="flex justify-center gap-4 flex-wrap mb-4">
                 <button
-                  onClick={() => handleShoot(0)}
+                  onClick={() => handleDrink(0)}
                   disabled={
-                     game.shellsRemaining === 0
+                     game.gobletsRemaining === 0
                   }
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Shoot Self
                 </button>
                 <button
-                  onClick={() => handleShoot(1)}
+                  onClick={() => handleDrink(1)}
                   disabled={
-                    game.shellsRemaining === 0
+                    game.gobletsRemaining === 0
                   }
                   className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -416,7 +385,7 @@ function stealItem(item: ItemType, targetPlayerIndex: number) {
                 <div className="mt-6">
                   <h3 className="text-xl font-semibold mb-3">Use Item</h3>
                   <div className="flex justify-center gap-3 flex-wrap">
-                    {game.players[game.activePlayerIndex].items.map((item) => (
+                    {game.players[game.activePlayerIndex].items.map((item:ItemType) => (
                       <button
                         key={item}
                         onClick={() => handleUseItem(item,1)} // Default target for some items
