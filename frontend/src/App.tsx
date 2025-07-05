@@ -1,25 +1,46 @@
-import GameUI from './GameUI';
-import PlayingArea from './components/GameUI/PlayingArea';
-
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import HomeScreen from './pages/HomeScreen';
+import SinglePlayerMode from './pages/SinglePlayerMode';
+// Import other pages as needed (e.g., Multiplayer, HowToPlay, Lore, About)
 
 function App() {
-
   return (
-    <div className="flex w-full h-screen bg-black text-white">
-  {/* Left Panel - Game Scene */}
-  <div className="w-[60%] relative bg-table-pattern">
-    {/* Table and players go here */}
-    <PlayingArea />
-  </div>
-{/* 
-    Right Panel - Event Log / Animations
-    <div className="w-[40%] p-4 overflow-y-auto bg-zinc-900 border-l border-gray-700">
-      <EventDisplay events={gameEvents} />
-      <AnimationLayer currentAction={currentAction} />
-    </div> */}
-  </div>
-
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomeRouteHandler />} />
+        <Route path="/singleplayer" element={<SinglePlayerMode />} />
+        {/* Add other routes here */}
+      </Routes>
+    </Router>
   );
+}
+
+function HomeRouteHandler() {
+  const navigate = useNavigate();
+
+  const handleSelect = (mode: string) => {
+    switch (mode) {
+      case 'Single Player':
+        navigate('/singleplayer');
+        break;
+      case 'Multiplayer':
+        navigate('/multiplayer'); // Add route/component later
+        break;
+      case 'How to Play':
+        navigate('/how-to-play');
+        break;
+      case 'Lore':
+        navigate('/lore');
+        break;
+      case 'About':
+        navigate('/about');
+        break;
+      default:
+        break;
+    }
+  };
+
+  return <HomeScreen onSelect={handleSelect} />;
 }
 
 export default App;

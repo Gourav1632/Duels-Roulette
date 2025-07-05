@@ -2,9 +2,9 @@
 export type StatusEffect = 'chained' | 'amplified' | 'thief' | string;
 
 export type ActionMessage = {
-  type: 'drink' | 'artifact_used' | 'skip' | string;
+  type: 'drink' | 'artifact_used' | 'skip' | 'refill' | 'message' | 'refill' | 'announce' | string;
   item?: ItemType;
-  userId: string;
+  userId?: string;
   targetId?: string;
   result?:  string;
 };
@@ -18,7 +18,7 @@ export type ItemType =
   | 'sovereign_potion' // use to restore 1 life
   | 'chronicle_ledger' // use to see any random future goblet
   | 'paradox_dial' // use to flip the type of the current goblet (poisnous becomes holy, holy becomes poisnous)
-  | 'thief_tooth'
+  | 'thiefs_tooth'
   |string
   ; // use to steal the opponent's item
 

@@ -64,12 +64,12 @@ function calculateActionScore(
           else score += 100;
           break;
 
-        case 'thief_tooth':
+        case 'thiefs_tooth':
           score = 50;
           if (opponent && opponent.items.length > 0) {
             let maxStolenScore = 0;
             for (const stolenItem of opponent.items) {
-              if (stolenItem === 'thief_tooth') continue;
+              if (stolenItem === 'thiefs_tooth') continue;
               const hypotheticalAction: Action = { type: 'use_item', itemType: stolenItem, targetPlayerId: opponent.id };
               const itemScore = calculateActionScore(game, hypotheticalAction, aiPlayer, opponent, pPoisonous);
               maxStolenScore = Math.max(maxStolenScore, itemScore);
@@ -104,6 +104,7 @@ function calculateActionScore(
 }
 
 export function automatonTakeTurn(game: GameState): { updatedGame: GameState, actionMessage: ActionMessage } {
+
   const { players, activePlayerIndex } = game;
   const aiPlayer = players[activePlayerIndex];
 
@@ -120,8 +121,9 @@ export function automatonTakeTurn(game: GameState): { updatedGame: GameState, ac
   let highestScore = -Infinity;
 
   if (aiPlayer.statusEffects.includes('thief') && opponent && opponent.items.length > 0) {
+
     for (const item of opponent.items) {
-      if (item === 'thief_tooth') continue;
+      if (item === 'thiefs_tooth') continue;
       const action: Action = { type: 'use_item', itemType: item, targetPlayerId: opponent.id };
       const score = calculateActionScore(game, action, aiPlayer, opponent, pPoisonous);
       if (score > highestScore) {
@@ -140,6 +142,7 @@ export function automatonTakeTurn(game: GameState): { updatedGame: GameState, ac
         }
         return p;
       });
+
 
       const finalPlayers = updatedPlayers.map((p) => {
         if (p.id === opponent.id) {
@@ -161,7 +164,7 @@ export function automatonTakeTurn(game: GameState): { updatedGame: GameState, ac
 
   for (const item of aiPlayer.items) {
     let targetPlayerId: string | undefined = undefined;
-    if (item === 'royal_chain_order' && opponent) {
+    if ((item === 'royal_chain_order' || item === 'thiefs_tooth') && opponent) {
       targetPlayerId = opponent.id;
     }
     const action: Action = { type: 'use_item', itemType: item, targetPlayerId };
@@ -191,6 +194,6 @@ export function automatonTakeTurn(game: GameState): { updatedGame: GameState, ac
   if (!bestAction) {
     bestAction = { type: 'drink', targetPlayerId: opponent ? opponent.id : aiPlayer.id };
   }
-
+  
   return playTurn(game, bestAction);
 }

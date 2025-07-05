@@ -159,14 +159,14 @@ function shuffleArray<T>(array: T[]): void {
 
 function getRandomItems(count: number): ItemType[] {
   const allItems: ItemType[] = [
-    'royal_scrutiny_glass',
-    'verdict_amplifier',
-    'crown_disavowal',
+    // 'royal_scrutiny_glass',
+    // 'verdict_amplifier',
+    // 'crown_disavowal',
     'royal_chain_order',
-    'sovereign_potion',
-    'chronicle_ledger',
-    'paradox_dial',
-    'thief_tooth',
+    // 'sovereign_potion',
+    // 'chronicle_ledger',
+    // 'paradox_dial',
+    'thiefs_tooth',
   ];
   const shuffled = [...allItems];
   shuffleArray(shuffled);
@@ -221,30 +221,30 @@ export function generateRoundConfig(round: number): RoundConfig {
 }
 
 export function refillChambers(game: GameState): GameState {
-  const sameRoundConfig = generateRoundConfig(game.currentRound.round);
-  const newGoblets: boolean[] = [];
+    const sameRoundConfig = generateRoundConfig(game.currentRound.round);
+    const newGoblets: boolean[] = [];
 
-  gobletCountMemory.poisonousGoblets = sameRoundConfig.poisnousGoblets;
-  gobletCountMemory.holyGoblets = sameRoundConfig.holyGoblets;
+    gobletCountMemory.poisonousGoblets = sameRoundConfig.poisnousGoblets;
+    gobletCountMemory.holyGoblets = sameRoundConfig.holyGoblets;
 
-  for (let i = 0; i < sameRoundConfig.poisnousGoblets; i++) newGoblets.push(true);
-  for (let i = 0; i < sameRoundConfig.holyGoblets; i++) newGoblets.push(false);
-  shuffleArray(newGoblets);
+    for (let i = 0; i < sameRoundConfig.poisnousGoblets; i++) newGoblets.push(true);
+    for (let i = 0; i < sameRoundConfig.holyGoblets; i++) newGoblets.push(false);
+    shuffleArray(newGoblets);
 
-  const itemsPerPlayer = sameRoundConfig.itemCount;
-  const updatedPlayers = game.players.map(player => ({
-    ...player,
-    items: getRandomItems(itemsPerPlayer),
-    statusEffects: [],
-  }));
+    const itemsPerPlayer = sameRoundConfig.itemCount;
+    const updatedPlayers = game.players.map(player => ({
+      ...player,
+      items: getRandomItems(itemsPerPlayer),
+      statusEffects: [],
+    }));
 
-  return {
-    ...game,
-    players: updatedPlayers,
-    goblets: newGoblets,
-    currentGobletIndex: 0,
-    gobletsRemaining: newGoblets.length,
-  };
+    return {
+      ...game,
+      players: updatedPlayers,
+      goblets: newGoblets,
+      currentGobletIndex: 0,
+      gobletsRemaining: newGoblets.length,
+    };
 }
 
 export const skipIfChained = (

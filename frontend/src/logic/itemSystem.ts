@@ -132,48 +132,47 @@ export function ParadoxDial(game: GameState) {
   return { updatedGame, actionMessage };
 }
 
-// Thief Tooth: Steals a random item from target player
-export function ThiefTooth(game: GameState, targetPlayerId: string) {
-  const { players, activePlayerIndex } = game;
-  const thief = players[activePlayerIndex];
-  const targetIndex = players.findIndex(p => p.id === targetPlayerId);
-  const target = players[targetIndex];
+// Thief Tooth: Steals a item from target player
+export function ThiefTooth(game: GameState) {
+const { players, activePlayerIndex } = game;
 
-  if (!target.items.length) {
+  const hasItemToSteal = players.some(
+    (p, i) => i !== activePlayerIndex && p.items.length > 0
+  );
+
+    const updatedPlayers = [...players];
+
+    if (!hasItemToSteal) {
+    // No item to steal → just remove thief's tooth from active player's inventory
+    const updatedPlayer = {
+       ...players[activePlayerIndex],
+      items: players[activePlayerIndex].items.filter(item => item !== 'thiefs_tooth'),
+    };
+    updatedPlayers[activePlayerIndex] = updatedPlayer;
+    const updatedGame = { ...game, players: updatedPlayers };
+
     const actionMessage: ActionMessage = {
       type: 'artifact_used',
-      item: 'thief_tooth',
-      userId: thief.id,
-      targetId: target.id,
-      result: 'FAILED_NO_ITEMS',
+      item: 'thiefs_tooth',
+      userId: game.players[activePlayerIndex].id,
+      result: 'FAILED_NO_TARGET',
     };
-    return { updatedGame: game, actionMessage };
+    return { updatedGame, actionMessage };
   }
 
-  const stolenIndex = Math.floor(Math.random() * target.items.length);
-  const stolenItem = target.items[stolenIndex];
 
-  const updatedTarget = {
-    ...target,
-    items: [...target.items.slice(0, stolenIndex), ...target.items.slice(stolenIndex + 1)],
+  const updatedPlayer = {
+    ...players[activePlayerIndex],
+    statusEffects: [...players[activePlayerIndex].statusEffects, 'thief'],
   };
-
-  const updatedThief = {
-    ...thief,
-    items: [...thief.items, stolenItem],
-  };
-
-  const updatedPlayers = [...players];
-  updatedPlayers[activePlayerIndex] = updatedThief;
-  updatedPlayers[targetIndex] = updatedTarget;
-
+  updatedPlayers[activePlayerIndex] = updatedPlayer;
   const updatedGame = { ...game, players: updatedPlayers };
+
   const actionMessage: ActionMessage = {
     type: 'artifact_used',
-    item: 'thief_tooth',
-    userId: thief.id,
-    targetId: target.id,
-    result: `STOLEN:${stolenItem}`,
+    item: 'thiefs_tooth',
+    userId: game.players[activePlayerIndex].id,
+    result: 'STEAL',
   };
   return { updatedGame, actionMessage };
 }
@@ -201,9 +200,7 @@ export function Item(game: GameState, itemType: ItemType, targetPlayerId?: strin
     case 'sovereign_potion': return SovereignPotion(updatedGame);
     case 'chronicle_ledger': return ChronicleLedger(updatedGame);
     case 'paradox_dial': return ParadoxDial(updatedGame);
-    case 'thief_tooth':
-      if (!targetPlayerId) throw new Error('Target required for thief_tooth');
-      return ThiefTooth(updatedGame, targetPlayerId);
+    case 'thiefs_tooth': return ThiefTooth(updatedGame);
     default: throw new Error(`Unknown item: ${itemType}`);
   }
 }

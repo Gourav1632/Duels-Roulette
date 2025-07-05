@@ -59,7 +59,7 @@ function GameUI() {
           return `${user?.name} consulted the Chronicle Ledger — the future goblet is ${msg.result?.toLowerCase()}.`;
         case 'paradox_dial':
           return `${user?.name} twisted the Paradox Dial — fate has reversed.`;
-        case 'thief_tooth':
+        case 'thiefs_tooth':
           return `${user?.name} used the Thief’s Tooth to steal an artifact from ${target?.name}.`;
         default:
           return `${user?.name} invoked an unknown artifact.`;
@@ -315,7 +315,7 @@ function GameUI() {
               {game.players[1].items.length > 0 ? (
                 game.players[1].items.map((item:ItemType, index:number) => (
                   <button
-                    disabled={!canStealItem || item === "thief_tooth"}
+                    disabled={!canStealItem || item === "thiefs_tooth"}
                     onClick={() => stealItem(item,1)}
                     key={index}
                     className={`bg-gray-600 text-gray-200 text-sm px-2 py-1 rounded-md transition-opacity ${
