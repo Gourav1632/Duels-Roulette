@@ -1,4 +1,4 @@
-import type { GameState, ItemType, ActionMessage } from '../utils/types';
+import type { GameState, ItemType, ActionMessage } from '../types/types';
 import { gobletCountMemory, gobletMemory } from './aiLogic';
 
 // Royal Scrutiny Glass: Reveals the type (Poisonous/Holy) of the current goblet

@@ -1,4 +1,4 @@
-import type { RoundConfig, GameState, Contestant, ItemType, ActionMessage } from '../utils/types';
+import type { RoundConfig, GameState, Contestant, ItemType, ActionMessage } from '../types/types';
 import { Item } from './itemSystem';
 import { gobletCountMemory } from './aiLogic';
 
@@ -124,6 +124,23 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
     };
   } else if (action.type === 'use_item' && action.itemType) {
     const itemType = action.itemType;
+
+    // if status is thief
+    const isThief = activePlayer.statusEffects.includes("thief");
+    if(isThief) {
+      const targetPlayer = game.players.find((p)=> p.id == action.targetPlayerId);
+      if(targetPlayer) {
+        const itemIndex = targetPlayer.items.indexOf(action.itemType);
+    
+        // simulating stealing by moving the item from target to active player inventory
+        targetPlayer.items.splice(itemIndex, 1);
+        activePlayer.items.push(action.itemType);
+    
+        // Remove "thief" status effect
+        activePlayer.statusEffects = activePlayer.statusEffects.filter(effect => effect !== "thief");
+      }
+    }
+
     if (!activePlayer.items.includes(itemType))
       return { updatedGame: game, actionMessage: { type: 'artifact_used', userId: activePlayer.id, result: `Item ${itemType} not found.` } };
 
@@ -159,13 +176,13 @@ function shuffleArray<T>(array: T[]): void {
 
 function getRandomItems(count: number): ItemType[] {
   const allItems: ItemType[] = [
-    // 'royal_scrutiny_glass',
-    // 'verdict_amplifier',
-    // 'crown_disavowal',
+    'royal_scrutiny_glass',
+    'verdict_amplifier',
+    'crown_disavowal',
     'royal_chain_order',
-    // 'sovereign_potion',
-    // 'chronicle_ledger',
-    // 'paradox_dial',
+    'sovereign_potion',
+    'chronicle_ledger',
+    'paradox_dial',
     'thiefs_tooth',
   ];
   const shuffled = [...allItems];

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "rootDir": "../",                  // <== includes shared folder
+    "outDir": "./dist",
+    "baseUrl": "../",                  // <== allows for import path aliases
+    "paths": {
+      "@shared/*": ["shared/*"]        // <== optional alias, for cleaner imports
+    }
+  },
+  "include": ["../backend/src", "../shared"], // <== include shared in build
+  "exclude": ["node_modules"]
+}

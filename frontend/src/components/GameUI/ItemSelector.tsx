@@ -1,11 +1,12 @@
-import type { ItemType } from '../../utils/types';
+import type { ItemType } from '../../../../shared/types/types';
 
 interface ItemSelectorProps {
   items: ItemType[];
   onSelect: (item: ItemType) => void;
+  canUseItem: boolean;
 }
 
-const ItemSelector = ({ items, onSelect }: ItemSelectorProps) => {
+const ItemSelector = ({ items, onSelect, canUseItem }: ItemSelectorProps) => {
   return (
     <div className="relative w-fit mx-auto bg-[#2a2a2a] border-[6px] border-[#363636] p-2 shadow-[inset_0_0_8px_#000]">
       {/* ✨ Glowing Corners */}
@@ -26,18 +27,18 @@ const ItemSelector = ({ items, onSelect }: ItemSelectorProps) => {
           return (
             <div
               key={index}
-              onClick={() => item && onSelect(item)}
+              onClick={() => item && canUseItem && onSelect(item)}
               className={`w-12 h-12 border-2 ${
                 item
-                  ? 'border-[#5a5a5a] hover:shadow-[0_0_12px_#ffd700] cursor-pointer'
+                  ? `border-[#5a5a5a] hover:shadow-[0_0_12px_#ffd700] ${canUseItem ? 'cursor-pointer' : 'cursor-not-allowed'}`
                   : 'border-[#2a2a2a]'
-              } bg-[#1e1e1e] flex items-center justify-center transition-all duration-200`}
+              } bg-[#1e1e1e] flex items-center justify-center transition-all duration-200 `}
             >
               {item && (
                 <img
                   src={`/items/${item}.png`}
                   alt={item}
-                  className="w-12 h-12 object-contain pointer-events-none"
+                  className={`w-12 h-12 object-contain pointer-events-none ${canUseItem ? '' : 'grayscale opacity-60'}`}
                 />
               )}
             </div>

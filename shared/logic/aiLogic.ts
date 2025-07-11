@@ -1,4 +1,4 @@
-import type { GameState, ItemType, ActionMessage, Contestant } from '../utils/types';
+import type { GameState, ItemType, ActionMessage, Contestant } from '../types/types';
 import { playTurn } from './gameEngine';
 
 export const gobletMemory: Record<number, 'poisonous' | 'holy'> = {};

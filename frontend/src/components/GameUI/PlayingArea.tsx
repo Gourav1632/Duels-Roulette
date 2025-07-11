@@ -1,10 +1,9 @@
 import { useState } from "react";
 import ItemSelector from "./ItemSelector";
-import type { Contestant, ItemType } from "../../utils/types";
+import type { Contestant, ItemType } from "../../../../shared/types/types";
 import Typewriter from 'typewriter-effect';
 
 const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, handleStealItem, handleDrink }: { canStealItem:boolean, canDrink:boolean, myPlayerId:string, players: Contestant[], handleUseItem: (item: ItemType, targetId: string) => void; handleStealItem:(item:ItemType, targetId:string) => void; handleDrink:(targetId:string)=> void}) => {
-  const [selectedPlayer, setSelectedPlayer] = useState<Contestant | null>(null);
   const [pendingTargetSelect, setPendingTargetSelect] = useState<boolean>(false);
   const [itemSelected,setItemSelected] = useState<ItemType | null> (null);
 
@@ -37,7 +36,6 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
   };
 
    const handlePlayerClick = (player: Contestant) => {
-    setSelectedPlayer(player);
 
     if(pendingTargetSelect && itemSelected){
       handleUseItem(itemSelected,player.id);
@@ -100,7 +98,7 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
 
       {/* Item Selector */}
       <div className="absolute w-full bottom-0 p-4">
-        <ItemSelector onSelect={(item) => {
+        <ItemSelector canUseItem={canDrink} onSelect={(item) => {
             handleUseItemAndPlayer(item);
         }} 
         items={players.find(p => p.id === myPlayerId)?.items || []}
@@ -174,7 +172,7 @@ const PlayerImage = ({
       </span>
 
       {/* Health - Souls */}
-      <div className="flex gap-[4px]">
+      <div className="flex gap-[2px]">
         {Array.from({ length: player.lives }).map((_, i) => (
           <img
             key={i}

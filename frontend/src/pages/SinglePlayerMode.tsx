@@ -8,10 +8,10 @@ import {
   playTurn,
   refillChambers,
   skipIfChained
-} from "../logic/gameEngine";
+} from "../../../shared/logic/gameEngine";
 
-import type { ActionMessage, ItemType, Contestant, GameState } from "../utils/types";
-import { automatonTakeTurn } from "../logic/aiLogic";
+import type { ActionMessage, ItemType, Contestant, GameState } from "../../../shared/types/types";
+import { automatonTakeTurn } from "../../../shared/logic/aiLogic";
 
 function SinglePlayerMode() {
   const [game, setGame] = useState<GameState | null>(null);
@@ -235,23 +235,8 @@ function SinglePlayerMode() {
 
   const handleStealItem = (item: ItemType, targetId: string) => {
     if (!game) return;
-    const currentGame = structuredClone(game);
-    const activePlayer = currentGame.players[currentGame.activePlayerIndex];
-    const targetPlayer = currentGame.players.find(player => player.id === targetId);
-    if (!targetPlayer) return;
 
-    const itemIndex = targetPlayer.items.indexOf(item);
-    if (itemIndex === -1) return;
-
-    // simulating stealing by moving the item from target to active player inventory
-    targetPlayer.items.splice(itemIndex, 1);
-    activePlayer.items.push(item);
-
-    // Remove "thief" status effect
-    activePlayer.statusEffects = activePlayer.statusEffects.filter(effect => effect !== "thief");
-
-
-    const { updatedGame, actionMessage } = playTurn(currentGame, {
+    const { updatedGame, actionMessage } = playTurn(game, {
       type: "use_item",
       itemType: item,
       targetPlayerId: targetId

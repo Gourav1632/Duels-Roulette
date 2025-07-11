@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ActionMessage, Contestant } from "../../utils/types";
+import type { ActionMessage, Contestant } from "../../../../shared/types/types";
 import TypeWriter from "typewriter-effect";
 
 function EventArea({
@@ -40,28 +40,28 @@ function EventArea({
 
 
     if (msg.type === "skip") {
-      setMessage(`${user.name === 'You' ? 'You were':`${user.name} was`} bound by royal chains...`);
+      setMessage(`${user.id === myPlayerId ? 'You were': `${user.name} was`} bound by royal chains...`);
       setTimeout(() => {
-        setMessage(`${user.name === 'You' ? 'Your':`${user.name}'s`} turn is skipped.`);
+        setMessage(`${user.id === myPlayerId ? 'Your':`${user.name}'s`} turn is skipped.`);
       }, 2500);
       return;
     }
 
     if (msg.type === "drink") {
       if (msg.userId === msg.targetId) {
-        setMessage(`${user.name} chose to drink the goblet...`);
+        setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} chose to drink the goblet...`);
 
         setTimeout(() => {
-          setMessage(`${user.name} sipped — it was ${msg.result?.toLowerCase()}.`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} sipped — it was ${msg.result?.toLowerCase()}.`);
         }, 2000);
 
         setTimeout(() => {
           setMessage(msg.result === "HOLY"
-            ? `${user.name} get another chance.`
-            : `${user.name} lost souls.`);
+            ? `${user.id === myPlayerId ? 'You' : `${user.name}`} get another chance.`
+            : `${user.id === myPlayerId ? 'You' : `${user.name}`} lost souls.`);
         }, 4000);
       } else {
-        setMessage(`${user.name} forced ${target?.name} to drink...`);
+        setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} forced ${target?.id === myPlayerId ? 'you' : `${target?.name}`} to drink...`);
 
         setTimeout(() => {
           setMessage(`It was ${msg.result?.toLowerCase()}.`);
@@ -69,7 +69,7 @@ function EventArea({
 
         if(msg.result != 'HOLY'){
         setTimeout(() => {
-          setMessage(`${target?.name} lost souls.`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} lost souls.`);
         }, 4000);
       }
       }
@@ -79,7 +79,7 @@ function EventArea({
     if (msg.type === "artifact_used" && msg.item) {
       switch (msg.item) {
         case "royal_scrutiny_glass":
-          setMessage(`${user.name} examined a goblet using the Royal Scrutiny Glass...`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} examined a goblet using the Royal Scrutiny Glass...`);
           setTimeout(() => {
             if (msg.userId === myPlayerId) {
               setMessage(`It is ${msg.result?.toLowerCase()}.`);
@@ -88,33 +88,33 @@ function EventArea({
           return;
 
         case "verdict_amplifier":
-          setMessage(`${user.name} invoked the Verdict Amplifier — the effect intensifies.`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} invoked the Verdict Amplifier — the effect intensifies.`);
 
           return;
 
         case "crown_disavowal":
-          setMessage(`${user.name} vaporized the goblet’s contents with the Crown Disavowal.`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} vaporized the goblet’s contents with the Crown Disavowal.`);
           setTimeout(() => {
             setMessage(`It was ${msg.result?.toLowerCase()}.`);
           }, 2500);
           return;
 
         case "royal_chain_order":
-          setMessage(`${user.name} bound ${target?.name} with a Royal Chain Order.`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} bound ${target?.id === myPlayerId ? 'you' : `${target?.name}`} with a Royal Chain Order.`);
           setTimeout(() => {
             setMessage(`${target?.id === myPlayerId ? 'You are':`${target?.name} is`} now chained.`);
           }, 2500);
           return;
 
         case "sovereign_potion":
-          setMessage(`${user.name} consumed a Sovereign Potion.`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} consumed a Sovereign Potion.`);
           setTimeout(() => {
-            setMessage(`${user.name} regained strength.`);
+            setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} regained strength.`);
           }, 2500);
           return;
 
         case "chronicle_ledger":
-          setMessage(`${user.name} consulted the Chronicle Ledger...`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} consulted the Chronicle Ledger...`);
           if (msg.userId === myPlayerId) {
             setTimeout(() => {
               const [result, goblet] = msg.result?.split(":") || [];
@@ -124,16 +124,16 @@ function EventArea({
           return;
 
         case "paradox_dial":
-          setMessage(`${user.name} twisted the Paradox Dial...`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} twisted the Paradox Dial...`);
           setTimeout(() => {
             setMessage(`Goblet state is now reversed.`);
           }, 2500);
           return;
 
         case "thiefs_tooth":
-          setMessage(`${user.name} used the Thief’s Tooth...`);
+          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} used the Thief’s Tooth...`);
           setTimeout(() => {
-            setMessage(`${user.name} now have power to steal from your foe!`);
+            setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} now have power to steal from your foe!`);
           }, 2500);
           if(msg.result == 'FAILED_NO_TARGET') {
             setTimeout(() => {
