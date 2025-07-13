@@ -1,4 +1,24 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RoyalScrutinyGlass = RoyalScrutinyGlass;
 exports.VerdictAmplifier = VerdictAmplifier;
@@ -9,176 +29,161 @@ exports.ChronicleLedger = ChronicleLedger;
 exports.ParadoxDial = ParadoxDial;
 exports.ThiefTooth = ThiefTooth;
 exports.Item = Item;
-const aiLogic_1 = require("./aiLogic");
+var aiLogic_1 = require("./aiLogic");
 // Royal Scrutiny Glass: Reveals the type (Poisonous/Holy) of the current goblet
 function RoyalScrutinyGlass(game) {
-    const { goblets, currentGobletIndex } = game;
-    const isPoisonous = goblets[currentGobletIndex];
+    var goblets = game.goblets, currentGobletIndex = game.currentGobletIndex;
+    var isPoisonous = goblets[currentGobletIndex];
     if (game.players[game.activePlayerIndex].isAI) {
         aiLogic_1.gobletMemory[currentGobletIndex] = isPoisonous ? 'poisonous' : 'holy';
     }
-    const actionMessage = {
+    var actionMessage = {
         type: 'artifact_used',
         item: 'royal_scrutiny_glass',
         userId: game.players[game.activePlayerIndex].id,
         result: isPoisonous ? 'POISONOUS' : 'HOLY',
     };
-    return { updatedGame: game, actionMessage };
+    return { updatedGame: game, actionMessage: actionMessage };
 }
 // Verdict Amplifier: Doubles the effect of the next poisonous/holy goblet
 function VerdictAmplifier(game) {
-    const { players, activePlayerIndex } = game;
-    const updatedPlayer = {
-        ...players[activePlayerIndex],
-        statusEffects: [...players[activePlayerIndex].statusEffects, 'amplified'],
-    };
-    const updatedPlayers = [...players];
+    var players = game.players, activePlayerIndex = game.activePlayerIndex;
+    var updatedPlayer = __assign(__assign({}, players[activePlayerIndex]), { statusEffects: __spreadArray(__spreadArray([], players[activePlayerIndex].statusEffects, true), ['amplified'], false) });
+    var updatedPlayers = __spreadArray([], players, true);
     updatedPlayers[activePlayerIndex] = updatedPlayer;
-    const updatedGame = { ...game, players: updatedPlayers };
-    const actionMessage = {
+    var updatedGame = __assign(__assign({}, game), { players: updatedPlayers });
+    var actionMessage = {
         type: 'artifact_used',
         item: 'verdict_amplifier',
         userId: game.players[activePlayerIndex].id,
         result: 'AMPLIFIED',
     };
-    return { updatedGame, actionMessage };
+    return { updatedGame: updatedGame, actionMessage: actionMessage };
 }
 // Crown Disavowal: Removes the current goblet
 function CrownDisavowal(game) {
-    const { goblets, currentGobletIndex, gobletsRemaining } = game;
-    const updatedGoblets = [...goblets];
-    const removedGoblet = updatedGoblets.splice(currentGobletIndex, 1)[0];
-    const updatedGame = {
-        ...game,
-        goblets: updatedGoblets,
-        gobletsRemaining: gobletsRemaining - 1,
-    };
+    var goblets = game.goblets, currentGobletIndex = game.currentGobletIndex, gobletsRemaining = game.gobletsRemaining;
+    var updatedGoblets = __spreadArray([], goblets, true);
+    var removedGoblet = updatedGoblets.splice(currentGobletIndex, 1)[0];
+    var updatedGame = __assign(__assign({}, game), { goblets: updatedGoblets, gobletsRemaining: gobletsRemaining - 1 });
     if (removedGoblet) {
         aiLogic_1.gobletCountMemory.poisonousGoblets--; // poison
     }
     else {
         aiLogic_1.gobletCountMemory.holyGoblets--; // holy
     }
-    const actionMessage = {
+    var actionMessage = {
         type: 'artifact_used',
         item: 'crown_disavowal',
         userId: game.players[game.activePlayerIndex].id,
         result: removedGoblet ? 'POISONOUS' : 'HOLY',
     };
-    return { updatedGame, actionMessage };
+    return { updatedGame: updatedGame, actionMessage: actionMessage };
 }
 // Royal Chain Order: Cuffs the target player
 function RoyalChainOrder(game, targetPlayerId) {
-    const updatedPlayers = game.players.map(player => player.id === targetPlayerId
-        ? { ...player, statusEffects: [...player.statusEffects, 'chained'] }
-        : player);
-    const updatedGame = { ...game, players: updatedPlayers };
-    const actionMessage = {
+    var updatedPlayers = game.players.map(function (player) {
+        return player.id === targetPlayerId
+            ? __assign(__assign({}, player), { statusEffects: __spreadArray(__spreadArray([], player.statusEffects, true), ['chained'], false) }) : player;
+    });
+    var updatedGame = __assign(__assign({}, game), { players: updatedPlayers });
+    var actionMessage = {
         type: 'artifact_used',
         item: 'royal_chain_order',
         userId: game.players[game.activePlayerIndex].id,
         targetId: targetPlayerId,
         result: 'CHAINED',
     };
-    return { updatedGame, actionMessage };
+    return { updatedGame: updatedGame, actionMessage: actionMessage };
 }
 // Sovereign Potion: Heals 1 life
 function SovereignPotion(game) {
-    const { players, activePlayerIndex } = game;
-    const updatedPlayers = [...players];
-    updatedPlayers[activePlayerIndex] = {
-        ...updatedPlayers[activePlayerIndex],
-        lives: updatedPlayers[activePlayerIndex].lives + 1,
-    };
-    const updatedGame = { ...game, players: updatedPlayers };
-    const actionMessage = {
+    var players = game.players, activePlayerIndex = game.activePlayerIndex;
+    var updatedPlayers = __spreadArray([], players, true);
+    updatedPlayers[activePlayerIndex] = __assign(__assign({}, updatedPlayers[activePlayerIndex]), { lives: updatedPlayers[activePlayerIndex].lives + 1 });
+    var updatedGame = __assign(__assign({}, game), { players: updatedPlayers });
+    var actionMessage = {
         type: 'artifact_used',
         item: 'sovereign_potion',
         userId: game.players[activePlayerIndex].id,
         result: 'HEALED',
     };
-    return { updatedGame, actionMessage };
+    return { updatedGame: updatedGame, actionMessage: actionMessage };
 }
 // Chronicle Ledger: Peeks at any random non-current goblet
 function ChronicleLedger(game) {
-    const { goblets, currentGobletIndex } = game;
-    const availableIndices = goblets
-        .map((_, i) => i)
-        .filter(i => i !== currentGobletIndex);
-    const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    const isPoisonous = goblets[randomIndex];
+    var goblets = game.goblets, currentGobletIndex = game.currentGobletIndex;
+    var availableIndices = goblets
+        .map(function (_, i) { return i; })
+        .filter(function (i) { return i !== currentGobletIndex; });
+    var randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    var isPoisonous = goblets[randomIndex];
     if (game.players[game.activePlayerIndex].isAI) {
         aiLogic_1.gobletMemory[randomIndex] = isPoisonous ? 'poisonous' : 'holy';
     }
-    const actionMessage = {
+    var actionMessage = {
         type: 'artifact_used',
         item: 'chronicle_ledger',
         userId: game.players[game.activePlayerIndex].id,
-        result: `${isPoisonous ? 'POISONOUS' : 'HOLY'}:${randomIndex}`,
+        result: "".concat(isPoisonous ? 'POISONOUS' : 'HOLY', ":").concat(randomIndex),
     };
-    return { updatedGame: game, actionMessage };
+    return { updatedGame: game, actionMessage: actionMessage };
 }
 // Paradox Dial: Flips current goblet’s type
 function ParadoxDial(game) {
-    const { goblets, currentGobletIndex } = game;
-    const updatedGoblets = [...goblets];
+    var goblets = game.goblets, currentGobletIndex = game.currentGobletIndex;
+    var updatedGoblets = __spreadArray([], goblets, true);
     updatedGoblets[currentGobletIndex] = !updatedGoblets[currentGobletIndex];
-    const updatedGame = { ...game, goblets: updatedGoblets };
-    const actionMessage = {
+    var updatedGame = __assign(__assign({}, game), { goblets: updatedGoblets });
+    var actionMessage = {
         type: 'artifact_used',
         item: 'paradox_dial',
         userId: game.players[game.activePlayerIndex].id,
-        result: `${updatedGoblets[currentGobletIndex] ? 'POISONOUS' : 'HOLY'}:INVERTED`,
+        result: "".concat(updatedGoblets[currentGobletIndex] ? 'POISONOUS' : 'HOLY', ":INVERTED"),
     };
-    return { updatedGame, actionMessage };
+    return { updatedGame: updatedGame, actionMessage: actionMessage };
 }
 // Thief Tooth: Steals a item from target player
 function ThiefTooth(game) {
-    const { players, activePlayerIndex } = game;
-    const hasItemToSteal = players.some((p, i) => i !== activePlayerIndex && p.items.length > 0);
-    const updatedPlayers = [...players];
+    var players = game.players, activePlayerIndex = game.activePlayerIndex;
+    var hasItemToSteal = players.some(function (p, i) { return i !== activePlayerIndex && p.items.length > 0; });
+    var updatedPlayers = __spreadArray([], players, true);
     if (!hasItemToSteal) {
         // No item to steal → just remove thief's tooth from active player's inventory
-        const updatedPlayer = {
-            ...players[activePlayerIndex],
-            items: players[activePlayerIndex].items.filter(item => item !== 'thiefs_tooth'),
-        };
-        updatedPlayers[activePlayerIndex] = updatedPlayer;
-        const updatedGame = { ...game, players: updatedPlayers };
-        const actionMessage = {
+        var updatedPlayer_1 = __assign(__assign({}, players[activePlayerIndex]), { items: players[activePlayerIndex].items.filter(function (item) { return item !== 'thiefs_tooth'; }) });
+        updatedPlayers[activePlayerIndex] = updatedPlayer_1;
+        var updatedGame_1 = __assign(__assign({}, game), { players: updatedPlayers });
+        var actionMessage_1 = {
             type: 'artifact_used',
             item: 'thiefs_tooth',
             userId: game.players[activePlayerIndex].id,
             result: 'FAILED_NO_TARGET',
         };
-        return { updatedGame, actionMessage };
+        return { updatedGame: updatedGame_1, actionMessage: actionMessage_1 };
     }
-    const updatedPlayer = {
-        ...players[activePlayerIndex],
-        statusEffects: [...players[activePlayerIndex].statusEffects, 'thief'],
-    };
+    var updatedPlayer = __assign(__assign({}, players[activePlayerIndex]), { statusEffects: __spreadArray(__spreadArray([], players[activePlayerIndex].statusEffects, true), ['thief'], false) });
     updatedPlayers[activePlayerIndex] = updatedPlayer;
-    const updatedGame = { ...game, players: updatedPlayers };
-    const actionMessage = {
+    var updatedGame = __assign(__assign({}, game), { players: updatedPlayers });
+    var actionMessage = {
         type: 'artifact_used',
         item: 'thiefs_tooth',
         userId: game.players[activePlayerIndex].id,
         result: 'STEAL',
     };
-    return { updatedGame, actionMessage };
+    return { updatedGame: updatedGame, actionMessage: actionMessage };
 }
 // Generic item handler
 function Item(game, itemType, targetPlayerId) {
-    const activePlayer = game.players[game.activePlayerIndex];
+    var activePlayer = game.players[game.activePlayerIndex];
     if (!activePlayer.items.includes(itemType)) {
-        throw new Error(`Item ${itemType} not available or already used this turn`);
+        throw new Error("Item ".concat(itemType, " not available or already used this turn"));
     }
-    const itemIndex = activePlayer.items.findIndex(item => item === itemType);
-    const updatedItems = [...activePlayer.items.slice(0, itemIndex), ...activePlayer.items.slice(itemIndex + 1)];
-    const updatedPlayer = { ...activePlayer, items: updatedItems };
-    const updatedPlayers = [...game.players];
+    var itemIndex = activePlayer.items.findIndex(function (item) { return item === itemType; });
+    var updatedItems = __spreadArray(__spreadArray([], activePlayer.items.slice(0, itemIndex), true), activePlayer.items.slice(itemIndex + 1), true);
+    var updatedPlayer = __assign(__assign({}, activePlayer), { items: updatedItems });
+    var updatedPlayers = __spreadArray([], game.players, true);
     updatedPlayers[game.activePlayerIndex] = updatedPlayer;
-    const updatedGame = { ...game, players: updatedPlayers };
+    var updatedGame = __assign(__assign({}, game), { players: updatedPlayers });
     switch (itemType) {
         case 'royal_scrutiny_glass': return RoyalScrutinyGlass(updatedGame);
         case 'verdict_amplifier': return VerdictAmplifier(updatedGame);
@@ -191,6 +196,6 @@ function Item(game, itemType, targetPlayerId) {
         case 'chronicle_ledger': return ChronicleLedger(updatedGame);
         case 'paradox_dial': return ParadoxDial(updatedGame);
         case 'thiefs_tooth': return ThiefTooth(updatedGame);
-        default: throw new Error(`Unknown item: ${itemType}`);
+        default: throw new Error("Unknown item: ".concat(itemType));
     }
 }

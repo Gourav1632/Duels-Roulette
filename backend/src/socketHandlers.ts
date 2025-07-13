@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import { roomManager } from "./rooms/roomManager";
-import { playTurn, initializeGame, startRound } from "@shared/logic/gameEngine";
-import { ActionMessage, Contestant, Player } from "@shared/types/types";
+import { playTurn, initializeGame, startRound } from "../../shared/logic/gameEngine";
+import { ActionMessage, Contestant, Player, StatusEffect } from "../../shared/types/types";
 import { handlePlayerTurn } from "./rooms/turnManager";
 
 export function registerSocketHandlers(io: Server) {
@@ -64,7 +64,7 @@ export function registerSocketHandlers(io: Server) {
           return;
         } 
         const players = room.players;
-        const gamePlayers: Contestant[] = players.map((p) => ({
+        const gamePlayers: Contestant[] = players.map((p : Player) => ({
           id: p.id,
           name: p.name,
           lives: 3,
@@ -102,7 +102,7 @@ export function registerSocketHandlers(io: Server) {
           if(!room || !room.gameState) return;    
 
           const active = room.gameState.players[room.gameState.activePlayerIndex];
-          room.players.forEach((player) => {
+          room.players.forEach((player : Player) => {
             const isActive = player.id === active.id;
             const turnMessage: ActionMessage = {
               type: "message",
@@ -137,7 +137,7 @@ export function registerSocketHandlers(io: Server) {
       if(action.type === 'steal') {
         const currentGame = room.gameState;
         const activePlayer = currentGame.players[currentGame.activePlayerIndex];
-        const targetPlayer = currentGame.players.find(player => player.id === action.targetPlayerId);
+        const targetPlayer = currentGame.players.find((player: Contestant) => player.id === action.targetPlayerId);
         if (!targetPlayer) return;
         const itemIndex = targetPlayer.items.indexOf(action.itemType);
         if (itemIndex === -1) return;
@@ -147,7 +147,7 @@ export function registerSocketHandlers(io: Server) {
         activePlayer.items.push(action.itemType);
 
         // Remove "thief" status effect
-        activePlayer.statusEffects = activePlayer.statusEffects.filter(effect => effect !== "thief");
+        activePlayer.statusEffects = activePlayer.statusEffects.filter((effect: StatusEffect) => effect !== "thief");
 
       }
 
@@ -161,7 +161,7 @@ export function registerSocketHandlers(io: Server) {
           if(!room || !room.gameState) return;    
 
           const active = room.gameState.players[room.gameState.activePlayerIndex];
-          room.players.forEach((player) => {
+          room.players.forEach((player: Player) => {
             const isActive = player.id === active.id;
             const turnMessage: ActionMessage = {
               type: "message",
