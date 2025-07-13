@@ -30,6 +30,11 @@ export const useVoiceChat = (
             "stun:global.stun.twilio.com:3478",
           ],
         },
+        {
+          urls: "turn:relay.metered.ca:443",
+          username: "openai",
+          credential: "chatgpt",
+        },
       ],
     });
 
@@ -49,6 +54,13 @@ export const useVoiceChat = (
       document.body.appendChild(audio);
     };
 
+    // Add diagnostic logs for connection state
+    peer.oniceconnectionstatechange = () => {
+      if (peer.iceConnectionState === "failed") {
+        console.warn(`❌ ICE connection failed with ${userId}`);
+      }
+    };
+
     return peer;
   };
 
@@ -57,9 +69,7 @@ export const useVoiceChat = (
 
     const getMediaAndSetup = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localStreamRef.current = stream;
 
         voiceJoin(socket, roomId);
