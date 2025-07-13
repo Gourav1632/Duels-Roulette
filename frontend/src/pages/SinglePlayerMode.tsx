@@ -108,7 +108,7 @@ function SinglePlayerMode() {
       setTimeout(() => {
         setLoading(false);
         setGame(started);
-      }, 5000);
+      }, 10000);
   }, []);
 
 
@@ -251,7 +251,7 @@ function SinglePlayerMode() {
 
 if (loading) return (
   <div
-    className="fixed p-4 inset-0 w-full h-full z-0 bg-cover bg-center flex items-center justify-center font-gothic"
+    className="fixed p-4 inset-0 w-full h-full z-0 bg-cover bg-center flex items-center justify-center font-medievalsharp"
     style={{ backgroundImage: "url('/game_ui/intro.webp')" }}
   >
     {/* Main parchment box */}
@@ -271,7 +271,8 @@ if (loading) return (
 
       {/* Text Content */}
       <p className="mb-4">
-        <span className="text-red-600 font-bold">Remember —</span> {gameMessage}
+        <span className="text-red-600 font-cinzel font-bold">Remember — </span> 
+        <span className="font-bold">{gameMessage}</span>
       </p>
       <p className="italic">
         Choose wisely... <span className="text-red-700">I’d hate to see you die too soon.</span>

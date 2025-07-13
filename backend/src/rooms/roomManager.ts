@@ -3,7 +3,7 @@ import { GameState, Contestant, Player, RoomData } from "@shared/types/types";
 
 class RoomManager {
   private rooms: Map<string, RoomData> = new Map();
-  createRoom(roomId: string, host: Player, maxPlayers: number, isPrivate: boolean, password: string) {
+  createRoom(roomId: string, host: Player, maxPlayers: number, isPrivate: boolean, password: string, voiceChatEnabled: boolean = false) {
     if (this.rooms.has(roomId)) throw new Error('Room already exists');
     this.rooms.set(roomId, {
         id: roomId,
@@ -13,6 +13,7 @@ class RoomManager {
         isPrivate: isPrivate,
         password: password,
         gameState: null,
+        voiceChatEnabled: voiceChatEnabled, 
     });
   }
 
@@ -63,8 +64,9 @@ joinRoom(roomId: string, player: Player, password?: string) {
     .map(([id, room]) => ({
       id,
       host: room.host,
-      players: room.players.length,
+      playersActive: room.players.length,
       maxPlayers: room.maxPlayers,
+      voiceChatEnabled: room.voiceChatEnabled,
     }));
 }
 

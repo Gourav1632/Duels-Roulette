@@ -2,10 +2,17 @@ import { useState } from "react";
 import ItemSelector from "./ItemSelector";
 import type { Contestant, ItemType } from "../../../../shared/types/types";
 import Typewriter from 'typewriter-effect';
+import ItemHelp from "./ItemHelp";
+import MusicSelector from "./MusicSelector";
 
 const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, handleStealItem, handleDrink }: { canStealItem:boolean, canDrink:boolean, myPlayerId:string, players: Contestant[], handleUseItem: (item: ItemType, targetId: string) => void; handleStealItem:(item:ItemType, targetId:string) => void; handleDrink:(targetId:string)=> void}) => {
   const [pendingTargetSelect, setPendingTargetSelect] = useState<boolean>(false);
   const [itemSelected,setItemSelected] = useState<ItemType | null> (null);
+  const [showHelp, setShowHelp] = useState(false);
+  const playerCount = players.length;
+  const [showMusicPopup, setShowMusicPopup] = useState(false);
+
+
 
 
   const handleUseItemAndPlayer = (item: ItemType) => {
@@ -49,10 +56,33 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
   };
 
 
-  const playerCount = players.length;
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
+      <div>
+    {/* Floating Help Button */}
+    <button
+      onClick={() => setShowHelp(true)}
+      className="absolute top-4 right-4 z-40 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
+      title="Item Help"
+    >
+      ?
+    </button>
+
+    {showHelp && <ItemHelp onClose={() => setShowHelp(false)} />}
+
+      {/* Floating Music Button */}
+<button
+  onClick={() => setShowMusicPopup(true)}
+  className="absolute top-4 right-16 z-40 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
+  title="Music Player"
+>
+  ♫
+</button>
+
+{showMusicPopup && <MusicSelector onClose={() => setShowMusicPopup(false)} />}
+      </div>
+
       {/* Background */}
       <img
         src="/game_scenes/courtroom.png"
@@ -63,7 +93,7 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
       {/* choice text */}
       {
         canDrink && 
-        <div className="font-gothic w-full text-2xl text-center absolute  top-[10%] transform  ">
+        <div className="font-cinzel w-full text-2xl text-center absolute  top-[10%] transform  ">
           <Typewriter
             options={{
               strings: ['Offer or Drink yourself...'],
@@ -165,14 +195,14 @@ const PlayerImage = ({
     </div>
 
     {/* Player UI panel */}
-    <div className="flex flex-col items-center gap-2 px-2 py-3 bg-[#1e1e1e]/90 shadow-[inset_0_0_10px_#000] text-white font-gothic w-[120px]">
+    <div className="flex flex-col items-center gap-2 px-2 py-3 bg-[#1e1e1e]/90 shadow-[inset_0_0_10px_#000] text-white font-cinzel w-[120px]">
       {/* Name */}
       <span className="text-sm tracking-wider text-white">
         {player.name}
       </span>
 
       {/* Health - Souls */}
-      <div className="flex gap-[2px]">
+      <div className="flex flex-wrap gap-[2px]">
         {Array.from({ length: player.lives }).map((_, i) => (
           <img
             key={i}

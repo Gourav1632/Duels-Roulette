@@ -12,7 +12,7 @@ export function registerSocketHandlers(io: Server) {
   io.on("connection", (socket) => {
     console.log("⚡ New client connected:", socket.id);
 
-    socket.on("create_room", ({ host, maxPlayer, isPrivate, password }) => {
+    socket.on("create_room", ({ host, maxPlayer, isPrivate, password, voiceChatEnabled }) => {
         const roomId = Math.random().toString(36).substring(2, 8);
         console.log("Creating room: ", roomId);
         const player: Player = {
@@ -20,7 +20,7 @@ export function registerSocketHandlers(io: Server) {
           name: host.name,
           socketId: socket.id,
         }
-        roomManager.createRoom(roomId, player, maxPlayer, isPrivate, password);
+        roomManager.createRoom(roomId, player, maxPlayer, isPrivate, password, voiceChatEnabled);
         socket.join(roomId);
 
         const roomData = roomManager.getRoom(roomId);
@@ -99,7 +99,7 @@ export function registerSocketHandlers(io: Server) {
           result: `Round ${game.currentRound.round} starts with ${poisnousGoblets} poisoned and ${holyGoblets} holy goblets.`
         };
 
-        io.to(roomId).emit("game_update", game, roundStartMessage, 5000);
+        io.to(roomId).emit("game_update", game, roundStartMessage, 10000);
 
         setTimeout(() => {
           const room = roomManager.getRoom(roomId);
@@ -131,7 +131,7 @@ export function registerSocketHandlers(io: Server) {
 
           }, 2000);
 
-        }, 5000);
+        }, 10000);
     })
 
     socket.on("player_action", ({ roomId, action, delay }) => {
@@ -191,6 +191,45 @@ export function registerSocketHandlers(io: Server) {
 
       }, delay);
     });
+    
+
+    // Voice Chat Signaling
+          
+      socket.on("voice-join", async ({ roomId }) => {
+        console.log(`Socket ${socket.id} joining voice room ${roomId}`);
+        socket.join(roomId); // Join the room for WebRTC signaling
+
+        // Notify other users in the room that this user has joined
+        console.log(`Emitting to other users of room ${roomId}`);
+        socket.to(roomId).emit("voice-user-joined", { userId: socket.id });
+
+      });
+
+
+
+      socket.on("voice-offer", ({ to, offer }) => {
+        console.log(`🎤 Sending voice offer to ${to}`);
+        io.to(to).emit("voice-offer", { from: socket.id, offer });
+      });
+
+      socket.on("voice-answer", ({ to, answer }) => {
+        io.to(to).emit("voice-answer", { from: socket.id, answer });
+      });
+
+      socket.on("voice-candidate", ({ to, candidate }) => {
+        io.to(to).emit("voice-candidate", { from: socket.id, candidate });
+      });
+
+      socket.on("leave-voice", (roomId: string) => {
+        if (socket.rooms.has(roomId)) {
+          socket.to(roomId).emit("leave-voice", socket.id);
+        } else {
+          console.warn(`⚠️ Socket ${socket.id} tried to leave voice in unknown room ${roomId}`);
+        }
+      });
+
+
+
 
     socket.on("disconnecting", () => {
       const rooms = Array.from(socket.rooms).filter((r) => r !== socket.id);

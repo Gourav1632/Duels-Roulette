@@ -16,7 +16,7 @@ const ItemSelector = ({ items, onSelect, canUseItem }: ItemSelectorProps) => {
       <div className="absolute w-2 h-2 bg-white bottom-0 right-0 shadow-[0_0_6px_#ffffff]"></div>
 
       {/* Heading */}
-      <h2 className="text-white text-sm font-gothic mb-2 text-center tracking-wider">
+      <h2 className="text-white text-sm font-cinzel mb-2 text-center tracking-wider">
         Inventory
       </h2>
 

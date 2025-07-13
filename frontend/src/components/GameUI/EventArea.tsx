@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState } from "react";
 import type { ActionMessage, Contestant } from "../../../../shared/types/types";
 import TypeWriter from "typewriter-effect";
 
@@ -69,7 +69,7 @@ function EventArea({
 
         if(msg.result != 'HOLY'){
         setTimeout(() => {
-          setMessage(`${user.id === myPlayerId ? 'You' : `${user.name}`} lost souls.`);
+          setMessage(`${target?.id === myPlayerId ? 'You' : `${target?.name}`} lost souls.`); 
         }, 4000);
       }
       }
@@ -215,7 +215,7 @@ function EventArea({
         className="absolute top-0 left-0 w-full h-full object-cover z-0"
       />
       <div className="absolute p-4 w-full bottom-0">
-        <div className="relative  bg-[#2a2a2a] border-[6px] border-[#363636] p-2 shadow-[inset_0_0_8px_#000] text-3xl font-gothic h-[130px] w-full text-white px-4 flex items-center z-10">
+        <div className="relative  bg-[#2a2a2a] border-[6px] border-[#363636] p-2 shadow-[inset_0_0_8px_#000] text-3xl font-medievalsharp h-[130px] w-full text-white px-4 flex items-center z-10">
           {/* ✨ Glowing Corners */}
         <div className="absolute w-2 h-2 bg-white top-0 left-0 shadow-[0_0_6px_#ffffff]"></div>
         <div className="absolute w-2 h-2 bg-white top-0 right-0 shadow-[0_0_6px_#ffffff]"></div>

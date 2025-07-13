@@ -69,4 +69,13 @@
       isPrivate: boolean,
       password: string,
       gameState: GameState | null;
+      voiceChatEnabled: boolean;
   }
+
+  export interface PublicRoomData {
+    id: string;
+    host: Player;
+    playersActive: number;
+    maxPlayers: number;
+    voiceChatEnabled: boolean;
+}

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import EventArea from '../components/GameUI/EventArea';
 import PlayingArea from '../components/GameUI/PlayingArea';
 import type { ActionMessage, ItemType, GameState, RoomData } from "../../../shared/types/types";
-import { emitPlayerAction, gameReady, onGameUpdate, socket } from "../utils/socket";
+import { emitPlayerAction, gameReady, onGameUpdate } from "../utils/socket";
+import { useSocket } from "../context/SocketContext";
 
 function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: string | null}) {
   
@@ -12,14 +13,14 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
   const [canStealItem, setCanStealItem] = useState<boolean>(false);
   const [canDrink, setCanDrink] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const socket = useSocket();
 
+  
 useEffect(() => {
   if (!room?.id) return;
-  console.log("My player id is ", myPlayerId);
 
   function updateTurnState(gameState: GameState) {
     const currentTurn = gameState.players[gameState.activePlayerIndex];
-    console.log("Current turn is ", currentTurn.id);
 
     // Reset interaction states
     setCanDrink(false);
@@ -35,8 +36,7 @@ useEffect(() => {
     }
   }
 
-  onGameUpdate((gameState, action, delay) => {
-    console.log(action);
+  onGameUpdate(socket,(gameState, action, delay) => {
 
     if (action.type === "announce" && action.result) {
       setLoading(true);
@@ -54,17 +54,12 @@ useEffect(() => {
     }
   });
 
-  gameReady(room.id);
+  gameReady(socket,room.id);
 
   return () => {
     socket.off("game_update");
   };
 }, [room?.id, myPlayerId]);
-
-
-useEffect(() => {
-  console.log("[PlayingArea] canDrink:", canDrink, "canStealItem:", canStealItem, "myPlayerId:", myPlayerId);
-}, [canDrink, canStealItem]);
 
 
 
@@ -88,7 +83,7 @@ useEffect(() => {
       targetPlayerId: targetId
     };
     
-    emitPlayerAction(room?.id, actionMessage ,5000);
+    emitPlayerAction(socket, room?.id, actionMessage ,5000);
 
   };
 
@@ -101,7 +96,7 @@ useEffect(() => {
       targetPlayerId: targetId
     };
 
-    emitPlayerAction(room.id, actionMessage, 5000);
+    emitPlayerAction(socket, room.id, actionMessage, 5000);
   };
 
   const handleStealItem = (item: ItemType, targetId: string) => {
@@ -113,12 +108,12 @@ useEffect(() => {
       targetPlayerId: targetId
     };
 
-    emitPlayerAction(room.id, actionMessage, 5000);
+    emitPlayerAction(socket, room.id, actionMessage, 5000);
   };
 
 if (loading) return (
   <div
-    className="fixed p-4 inset-0 w-full h-full z-0 bg-cover bg-center flex items-center justify-center font-gothic"
+    className="fixed p-4 inset-0 w-full h-full z-0 bg-cover bg-center flex items-center justify-center font-medievalsharp"
     style={{ backgroundImage: "url('/game_ui/intro.webp')" }}
   >
     {/* Main parchment box */}
