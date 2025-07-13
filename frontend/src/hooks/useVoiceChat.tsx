@@ -13,34 +13,76 @@ import {
   sendVoiceOffer,
 } from "../utils/socket";
 
-export const useVoiceChat = (socket: Socket, roomId: string, enabled: boolean) => {
+export const useVoiceChat = (
+  socket: Socket,
+  roomId: string,
+  enabled: boolean
+) => {
   const peersRef = useRef<Record<string, RTCPeerConnection>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
+
+  const createPeer = (userId: string, socket: Socket) => {
+    const peer = new RTCPeerConnection({
+      iceServers: [
+        {
+          urls: [
+            "stun:stun.l.google.com:19302",
+            "stun:global.stun.twilio.com:3478",
+          ],
+        },
+      ],
+    });
+
+    peer.onicecandidate = (ev) => {
+      if (ev.candidate) {
+        sendVoiceCandidate(socket, userId, ev.candidate);
+      }
+    };
+
+    peer.ontrack = (ev) => {
+      const audio = document.createElement("audio");
+      audio.id = `audio-${userId}`;
+      audio.srcObject = ev.streams[0];
+      audio.autoplay = true;
+      audio.muted = false;
+      audio.play().catch(() => {});
+      document.body.appendChild(audio);
+    };
+
+    return peer;
+  };
 
   useEffect(() => {
     if (!enabled || !roomId) return;
 
-    const getMedia = async () => {
+    const getMediaAndSetup = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         localStreamRef.current = stream;
 
         voiceJoin(socket, roomId);
 
-        // --- Listeners ---
         onVoiceOffer(socket, async ({ from, offer }) => {
-          const peer = createPeer(from, socket);
-          await peer.setRemoteDescription(new RTCSessionDescription(offer));
+          let peer = peersRef.current[from];
+          if (!peer) {
+            peer = createPeer(from, socket);
+            peersRef.current[from] = peer;
+            stream.getTracks().forEach((t) => peer!.addTrack(t, stream));
+          }
+
+          await peer.setRemoteDescription(offer);
           const answer = await peer.createAnswer();
           await peer.setLocalDescription(answer);
           sendVoiceAnswer(socket, from, answer);
-          stream.getTracks().forEach((track) => peer.addTrack(track, stream));
-          peersRef.current[from] = peer;
         });
 
         onVoiceAnswer(socket, async ({ from, answer }) => {
           const peer = peersRef.current[from];
-          if (peer) await peer.setRemoteDescription(new RTCSessionDescription(answer));
+          if (peer) {
+            await peer.setRemoteDescription(answer);
+          }
         });
 
         onVoiceCandidate(socket, ({ from, candidate }) => {
@@ -51,19 +93,16 @@ export const useVoiceChat = (socket: Socket, roomId: string, enabled: boolean) =
         });
 
         onVoiceUserJoined(socket, async ({ userId }) => {
+          if (peersRef.current[userId]) return;
 
           const peer = createPeer(userId, socket);
-
-          // Add local tracks
-          stream.getTracks().forEach((track) => peer.addTrack(track, stream));
           peersRef.current[userId] = peer;
 
-          // ✅ Create and send offer
+          stream.getTracks().forEach((t) => peer.addTrack(t, stream));
           const offer = await peer.createOffer();
           await peer.setLocalDescription(offer);
           sendVoiceOffer(socket, userId, offer);
         });
-
 
         onVoiceLeave(socket, (userId) => {
           const peer = peersRef.current[userId];
@@ -71,55 +110,32 @@ export const useVoiceChat = (socket: Socket, roomId: string, enabled: boolean) =
             peer.close();
             delete peersRef.current[userId];
           }
+          const audio = document.getElementById(`audio-${userId}`);
+          if (audio) audio.remove();
         });
       } catch (err) {
-        console.error("🎙️ Microphone access denied or error occurred:", err);
+        console.error("Microphone access error:", err);
       }
     };
 
-    getMedia();
+    getMediaAndSetup();
 
     return () => {
-      // Cleanup
-      Object.values(peersRef.current).forEach((peer) => peer.close());
-      localStreamRef.current?.getTracks().forEach((track) => track.stop());
+      Object.values(peersRef.current).forEach((p) => p.close());
+      peersRef.current = {};
+
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = null;
+
       leaveVoiceRoom(socket, roomId);
 
-      // Remove listeners manually or via helper
+      document.querySelectorAll("audio[id^='audio-']").forEach((a) => a.remove());
+
       socket.off("voice-offer");
       socket.off("voice-answer");
       socket.off("voice-candidate");
       socket.off("voice-user-joined");
       socket.off("leave-voice");
     };
-  }, [enabled, roomId]);
-
-const createPeer = (userId: string, socket: Socket): RTCPeerConnection => {
-  const peer = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  });
-
-  peer.onicecandidate = (event) => {
-    if (event.candidate) {
-      sendVoiceCandidate(socket, userId, event.candidate);
-    }
-  };
-
-  peer.ontrack = (event) => {
-    const audio = document.createElement("audio");
-    audio.srcObject = event.streams[0];
-    audio.autoplay = true;
-    audio.controls = true;
-    audio.muted = false;
-
-    audio.play().catch((err) => {
-      console.warn("🔇 Autoplay blocked, user interaction required", err);
-    });
-
-    document.body.appendChild(audio);
-  };
-
-  return peer;
-};
-
+  }, [enabled, roomId, socket]);
 };

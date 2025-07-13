@@ -196,11 +196,9 @@ export function registerSocketHandlers(io: Server) {
         socket.join(roomId); // Join the room for WebRTC signaling
 
         // Notify other users in the room that this user has joined
-        console.log(`Emitting to other users of room ${roomId}`);
         socket.to(roomId).emit("voice-user-joined", { userId: socket.id });
 
       });
-
 
 
       socket.on("voice-offer", ({ to, offer }) => {
