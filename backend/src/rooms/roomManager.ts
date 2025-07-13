@@ -1,5 +1,5 @@
 // backend/src/utils/roomManager.ts
-import { GameState, Contestant, Player, RoomData } from "@shared/types/types";
+import { GameState, Player, RoomData } from "@shared/types/types";
 
 class RoomManager {
   private rooms: Map<string, RoomData> = new Map();

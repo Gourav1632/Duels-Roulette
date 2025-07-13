@@ -4,13 +4,13 @@
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
-    "rootDir": "../",                  // <== includes shared folder
-    "outDir": "./dist",
-    "baseUrl": "../",                  // <== allows for import path aliases
+    "rootDir": "../",
+    "outDir": "dist",
+    "baseUrl": ".",
     "paths": {
-      "@shared/*": ["shared/*"]        // <== optional alias, for cleaner imports
+      "@shared/*": ["../shared/*"]
     }
   },
-  "include": ["../backend/src", "../shared"], // <== include shared in build
+  "include": ["src"],
   "exclude": ["node_modules"]
 }

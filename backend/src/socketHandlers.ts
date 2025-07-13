@@ -1,10 +1,6 @@
 import { Server } from "socket.io";
 import { roomManager } from "./rooms/roomManager";
-import {
-  playTurn,
-  startRound,
-  initializeGame,
-} from "../../shared/logic/gameEngine";
+import { playTurn, initializeGame, startRound } from "@shared/logic/gameEngine";
 import { ActionMessage, Contestant, Player } from "@shared/types/types";
 import { handlePlayerTurn } from "./rooms/turnManager";
 

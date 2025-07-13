@@ -1,5 +1,5 @@
   import type { GameState, ActionMessage } from "@shared/types/types";
-  import { skipIfChained, refillChambers, startRound } from "../../../shared/logic/gameEngine";
+  import { skipIfChained, refillChambers, startRound } from "@shared/logic/gameEngine";
 import { roomManager } from "./roomManager";
   
 export function handlePlayerTurn(
