@@ -6,9 +6,9 @@
     "esModuleInterop": true,
     "rootDir": "../",
     "outDir": "dist",
-    "baseUrl": ".",
+    "baseUrl": "../",
     "paths": {
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["shared/*"]
     }
   },
   "include": ["src"],
