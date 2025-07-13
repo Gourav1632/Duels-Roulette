@@ -13,6 +13,7 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
   const [canStealItem, setCanStealItem] = useState<boolean>(false);
   const [canDrink, setCanDrink] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showPlayingArea, setShowPlayingArea] = useState<boolean>(true);
   const socket = useSocket();
 
   
@@ -66,9 +67,10 @@ useEffect(() => {
   // Utility to trigger an event and pause game logic until EventArea finishes
   function triggerEvent(action: ActionMessage, delay: number, next?: () => void) {
     setActionMessage(action); // Show the message
+    setShowPlayingArea(false); // Hide the playing area
     setCanDrink(false) // disable player interaction when event
     setTimeout(() => {
-      setActionMessage(null);
+      setShowPlayingArea(true); // Show the playing area again
       if (next) next();       // Continue the game logic after delay
     }, delay);
   }
@@ -149,7 +151,7 @@ if (loading) return (
 
       {/* Mobile view  */}
       {/* Left Panel - Game Scene */}
-      <div className={` ${ !actionMessage ? 'w-[100%]' : 'w-0'} lg:hidden relative bg-table-pattern`}>
+      <div className={` ${ showPlayingArea ? 'w-[100%]' : 'w-0'} lg:hidden relative bg-table-pattern`}>
         {game && game.players && myPlayerId &&
           <PlayingArea
             handleDrink={handleDrink}
@@ -164,7 +166,7 @@ if (loading) return (
       </div>
 
       {/* Right Panel - Event Log / Animations */}
-      <div className={` ${ actionMessage ? 'w-[100%]' : 'w-0'}  lg:hidden overflow-y-auto bg-zinc-900 border-l border-gray-700`}>
+      <div className={` ${ !showPlayingArea ? 'w-[100%]' : 'w-0'}  lg:hidden overflow-y-auto bg-zinc-900 border-l border-gray-700`}>
         {game && actionMessage && myPlayerId &&
           <EventArea
             myPlayerId={myPlayerId}
