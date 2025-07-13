@@ -8,6 +8,7 @@ import type { RoomData } from '../../shared/types/types';
 import HowToPlay from './pages/HotToPlay';
 import Lore from './pages/Lore';
 import Credits from './pages/Credits';
+import { VoiceChatProvider } from './context/VoiceChatContext';
 // Import other pages as needed (e.g., Multiplayer, HowToPlay, Lore, About)
 
 function App() {
@@ -16,16 +17,18 @@ function App() {
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   return (
     <Router>
+      <VoiceChatProvider roomId={roomData?.id ?? ""} voiceChatEnabled={roomData?.voiceChatEnabled ?? false}>
       <Routes>
         <Route path="/" element={<HomeRouteHandler />} />
         <Route path="/singleplayer" element={<SinglePlayerMode />} />
-        <Route path='/multiplayerlobby' element={<MultiplayerLobby setMyPlayerId={setMyPlayerId} setRoomData={setRoomData} />} />
-        <Route path='/multiplayer' element={<MultiPlayerMode myPlayerId={myPlayerId} room={roomData}/>} />
+          <Route path='/multiplayerlobby' element={<MultiplayerLobby setMyPlayerId={setMyPlayerId} setRoomData={setRoomData} />} />
+          <Route path='/multiplayer' element={<MultiPlayerMode myPlayerId={myPlayerId} room={roomData} />} />
         <Route path='/how-to-play' element={<HowToPlay />} />
         <Route path='/lore' element={<Lore />} />
         <Route path='/credits' element={<Credits />} /> 
         {/* Add other routes here */}
       </Routes>
+        </VoiceChatProvider>
     </Router>
   );
 }

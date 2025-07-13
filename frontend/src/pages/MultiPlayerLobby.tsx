@@ -15,7 +15,6 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import type { PublicRoomData, RoomData } from "../../../shared/types/types";
 import { useSocket } from "../context/SocketContext";
-import { useVoiceChat } from "../hooks/useVoiceChat";
 
 
 
@@ -40,7 +39,6 @@ const MultiplayerLobby = ({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const navigate = useNavigate();
   const socket = useSocket();
-  useVoiceChat(socket, room?.id ?? "", room?.voiceChatEnabled ?? false);
 
 
 
