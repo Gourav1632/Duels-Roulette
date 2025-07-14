@@ -7,7 +7,7 @@ const Credits = () => {
 
   return (
 
-    <div className="relative w-full flex items-center justify-center min-h-screen overflow-auto">
+    <div className="relative w-full flex items-center  min-h-screen overflow-hidden">
 
       {/* Background Image */}
       <img
@@ -30,7 +30,7 @@ const Credits = () => {
           <div className="absolute w-2 h-2 bg-white bottom-[6px] right-[6px] shadow-[0_0_6px_#ffffff]" />
 
           {/* Main Credit Box */}
-          <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 space-y-8 font-medievalsharp">
+          <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 space-y-6 font-medievalsharp max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h1 className="text-4xl font-bold text-center text-yellow-400">Credits</h1>
 
             <section className="space-y-2 text-center text-lg">

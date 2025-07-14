@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import EventArea from '../components/GameUI/EventArea';
 import PlayingArea from '../components/GameUI/PlayingArea';
-
+import GameOverScreen from '../components/GameUI/GameOverScreen';
 import {
   initializeGame,
   startRound,
   playTurn,
   refillChambers,
-  skipIfChained
+  skipIfChained,
+  nextRound
 } from "../../../shared/logic/gameEngine";
 
 import type { ActionMessage, ItemType, Contestant, GameState } from "../../../shared/types/types";
@@ -22,7 +23,8 @@ function SinglePlayerMode() {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(()=>{
-    if(!game || game.gameState == 'loading') return;
+    
+    if(!game || game.gameState == 'loading' || game.gameState == 'game_over') return;
     const active = game.players[game.activePlayerIndex]
     const introMessage: ActionMessage = {
       type: 'message',
@@ -61,11 +63,17 @@ function SinglePlayerMode() {
     if (deadPlayers.length > 0) {
       setLoading(true);
       const nextround = game.currentRound.round + 1;
-      setGameMessage(`${deadPlayers.map(p => p.name).join(', ')} lost the round. Round ${nextround} begins!!!`);
-      setTimeout(() => {
-        setLoading(false);
-        setGame(startRound(game, nextround));
-      }, 5000);
+      const updatedGame = nextRound(game, nextround);
+      const {holyGoblets, poisnousGoblets} = updatedGame.currentRound;
+      if (updatedGame.gameState !== "game_over") {
+        setGameMessage(`${deadPlayers.map(p => p.name).join(', ')} lost the round. Round ${nextround} starts with ${poisnousGoblets} poisoned and ${holyGoblets} holy goblets.`);
+        setTimeout(() => {
+          setLoading(false);
+          setGame(updatedGame);
+        }, 5000);
+      } else {
+        setGame(updatedGame);
+      }
     } else {
       setGame(game);
     }
@@ -98,7 +106,7 @@ function SinglePlayerMode() {
 
     const gamePlayers = [humanPlayer, automatonPlayer];
     const initialized = initializeGame(gamePlayers);
-    const started = startRound(initialized, 2);
+    const started = startRound(initialized, 3);
     // fetch round config
     const { poisnousGoblets, holyGoblets } = started.currentRound;
     const roundStartMessage: ActionMessage = {
@@ -250,6 +258,18 @@ function SinglePlayerMode() {
       setCanDrink(true);
     });
   };
+
+if (game?.gameState === "game_over") {
+  return (
+    <GameOverScreen
+      players={game.players}
+      onRestart={() => {
+        window.location.reload();
+      }}
+    />
+  );
+}
+
 
 if (loading) return (
   <div

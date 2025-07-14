@@ -1,6 +1,6 @@
 const Lore = () => {
   return (
-    <div className="relative w-full min-h-screen overflow-auto">
+    <div className="relative w-full min-h-screen flex items-center overflow-hidden">
       {/* Fixed Background Image */}
       <img
         src="/game_ui/homescreen.jpg"
@@ -23,7 +23,7 @@ const Lore = () => {
 
 
           {/* Actual Content Box with padding */}
-          <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 space-y-6 font-medievalsharp text-lg leading-relaxed">
+          <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 space-y-6 font-medievalsharp max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h1 className="text-4xl font-bold text-center text-yellow-400">Lore</h1>
 
             <p className="italic text-gray-300">

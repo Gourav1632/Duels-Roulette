@@ -4,6 +4,12 @@ import type { Contestant, ItemType } from "../../../../shared/types/types";
 import Typewriter from 'typewriter-effect';
 import ItemHelp from "./ItemHelp";
 import MusicSelector from "./MusicSelector";
+import Scoreboard from "./Scoreboard";
+import { GiScrollUnfurled } from "react-icons/gi";
+import { GiMusicalNotes } from "react-icons/gi";
+import { IoMdHelp } from "react-icons/io";
+
+
 
 const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, handleStealItem, handleDrink }: { canStealItem:boolean, canDrink:boolean, myPlayerId:string, players: Contestant[], handleUseItem: (item: ItemType, targetId: string) => void; handleStealItem:(item:ItemType, targetId:string) => void; handleDrink:(targetId:string)=> void}) => {
   const [pendingTargetSelect, setPendingTargetSelect] = useState<boolean>(false);
@@ -11,6 +17,7 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
   const [showHelp, setShowHelp] = useState(false);
   const playerCount = players.length;
   const [showMusicPopup, setShowMusicPopup] = useState(false);
+  const [showScoreboard, setShowScoreboard] = useState(false);
 
 
   const handleUseItemAndPlayer = (item: ItemType) => {
@@ -57,29 +64,42 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
-      <div>
-    {/* Floating Help Button */}
-    <button
-      onClick={() => setShowHelp(true)}
-      className="absolute top-4 right-4 z-40 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
-      title="Item Help"
-    >
-      ?
-    </button>
 
-    {showHelp && <ItemHelp onClose={() => setShowHelp(false)} />}
+      <div className="absolute top-4 right-4 z-40 flex flex-col gap-4 items-end">
+        {/* Help Button */}
+        <button
+          onClick={() => setShowHelp(true)}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
+          title="Item Help"
+        >
+          <IoMdHelp />
+        </button>
 
-      {/* Floating Music Button */}
-<button
-  onClick={() => setShowMusicPopup(true)}
-  className="absolute top-4 right-16 z-40 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
-  title="Music Player"
->
-  ♫
-</button>
+        {/* Music Button */}
+        <button
+          onClick={() => setShowMusicPopup(true)}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
+          title="Music Player"
+        >
+          <GiMusicalNotes />
 
-{showMusicPopup && <MusicSelector onClose={() => setShowMusicPopup(false)} />}
+        </button>
+
+        {/* Scoreboard Button */}
+        <button
+          onClick={() => setShowScoreboard(true)}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
+          title="View Scoreboard"
+        >
+          <GiScrollUnfurled />
+        </button>
       </div>
+
+      {showHelp && <ItemHelp onClose={() => setShowHelp(false)} />}
+      {showMusicPopup && <MusicSelector onClose={() => setShowMusicPopup(false)} />}
+      {showScoreboard && <Scoreboard players={players} onClose={() => setShowScoreboard(false)} />}
+
+
 
       {/* Background */}
       <img

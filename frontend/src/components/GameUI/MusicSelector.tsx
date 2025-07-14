@@ -42,7 +42,7 @@ const MusicSelector = ({ onClose }: { onClose: () => void }) => {
           <button
             onClick={onClose}
             aria-label="Close music player"
-            className="absolute -top-4 -right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl shadow-lg"
+            className="absolute top-2 right-2 hover:text-amber-300 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl "
           >
             ×
           </button>

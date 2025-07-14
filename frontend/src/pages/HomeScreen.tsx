@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useSound } from "../hooks/sound";
 import MusicSelector from "../components/GameUI/MusicSelector";
+import { GiMusicalNotes } from "react-icons/gi";
+
 
 const HomeScreen = ({ onSelect }: { onSelect: (mode: string) => void }) => {
   const playSelectSound = useSound("/sounds/select.wav");
@@ -25,7 +27,7 @@ const HomeScreen = ({ onSelect }: { onSelect: (mode: string) => void }) => {
         className="absolute top-4 right-4 z-40 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
         title="Music Player"
       >
-        ♫
+        <GiMusicalNotes />
       </button>
 
       {showMusicPopup && <MusicSelector onClose={() => setShowMusicPopup(false)} />}

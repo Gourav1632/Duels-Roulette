@@ -52,7 +52,7 @@ const items = [
 
 const HowToPlay = () => {
   return (
-    <div className="relative w-full min-h-screen overflow-auto">
+    <div className="relative w-full min-h-screen flex items-center overflow-hidden">
       {/* Fixed Background Image */}
       <img
         src="/game_ui/homescreen.jpg"
@@ -74,7 +74,7 @@ const HowToPlay = () => {
           <div className="absolute w-2 h-2 bg-white bottom-[6px] right-[6px] shadow-[0_0_6px_#ffffff]" />
 
           {/* Main Box */}
-          <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 space-y-6 font-medievalsharp">
+          <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 space-y-6 font-medievalsharp max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h1 className="text-4xl font-bold text-center text-yellow-400">How to Play</h1>
 
             <section className="space-y-2 text-lg">
@@ -105,6 +105,28 @@ const HowToPlay = () => {
                 Use your instincts, items, and deceit to survive the king’s game.
               </p>
             </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-yellow-300 mb-2">Scoring System</h2>
+              <ul className="list-disc list-inside space-y-2 text-lg text-gray-200">
+                <li>
+                  <span className="text-yellow-100 font-semibold">+2 point</span> — Taking risk and drinking goblet.
+                </li>
+                <li>
+                  <span className="text-yellow-100 font-semibold">+2 points</span> — Inflicting poison to an opponent.
+                </li>
+                <li>
+                  <span className="text-yellow-100 font-semibold">+2 point</span> — For each health remaining after surviving round.
+                </li>
+                <li>
+                  <span className="text-red-400 font-semibold">−1 point</span> — Using an artifact.
+                </li>
+              </ul>
+              <p className="text-sm text-gray-400 italic mt-4 text-center">
+                Outsmart your opponents, manipulate fate, and claim the highest score to win the King’s favor.
+              </p>
+            </section>
+
 
             <section>
               <h2 className="text-2xl font-bold text-yellow-300 mb-2">Artifacts</h2>

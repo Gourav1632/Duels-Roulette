@@ -84,6 +84,7 @@ export function registerSocketHandlers(io: Server) {
           isAI: false,
           isOnline: true,
           statusEffects: [],
+          score: 0,
         }));
 
         const initialized = initializeGame(gamePlayers);

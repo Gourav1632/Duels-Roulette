@@ -73,14 +73,23 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
     }
 
     const isPoisonous = goblets[currentGobletIndex];
+
     if (isPoisonous) {
       const damage = hasAmplified ? 2 : 1;
       updatedPlayers[targetPlayerIndex] = {
         ...updatedPlayers[targetPlayerIndex],
         lives: updatedPlayers[targetPlayerIndex].lives - damage,
       };
+      updatedPlayers[activePlayerIndex] = {
+        ...updatedPlayers[activePlayerIndex],
+        score: updatedPlayers[activePlayerIndex].score + 2 , // increment score for causing damage or taking risk
+      };
     } else {
       if (targetPlayerIndex === activePlayerIndex) {
+        updatedPlayers[activePlayerIndex] = {
+          ...updatedPlayers[activePlayerIndex],
+          score: updatedPlayers[activePlayerIndex].score + 2, // increment score for taking risk
+        };
         const nextGame = {
           ...game,
           players: updatedPlayers,
@@ -124,8 +133,8 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
     };
   } else if (action.type === 'use_item' && action.itemType) {
     const itemType = action.itemType;
-
     // if status is thief
+
     const isThief = activePlayer.statusEffects.includes("thief");
     if(isThief) {
       const targetPlayer = game.players.find((p)=> p.id == action.targetPlayerId);
@@ -144,7 +153,14 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
     if (!activePlayer.items.includes(itemType))
       return { updatedGame: game, actionMessage: { type: 'artifact_used', userId: activePlayer.id, result: `Item ${itemType} not found.` } };
 
-    const updatedGame = Item(game, itemType, action.targetPlayerId);
+    const updatedPlayers = [...players];
+    updatedPlayers[activePlayerIndex] = {
+      ...updatedPlayers[activePlayerIndex],
+      score : updatedPlayers[activePlayerIndex].score - 1, // decrement score for using item
+    }
+
+    const updatedGame = Item({...game, players: updatedPlayers }, itemType, action.targetPlayerId);
+
     return updatedGame;
   }
 
@@ -154,16 +170,18 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
 // End a round
 export function nextRound(game: GameState, roundNumber: number): GameState {
   const { players } = game;
+  // add the score = 2* health remaining for each player
+  players.forEach(player => {
+    player.score += 2*player.lives;
+  });
   const nextRoundConfig = generateRoundConfig(roundNumber);
   if (!nextRoundConfig) throw new Error(`Invalid round number: ${roundNumber}`);
-  if (players.length <= 1) {
-    return { ...game, gameState: 'game_over' };
-  }
+
 
   return {
     ...game,
     currentRound: nextRoundConfig,
-    gameState: 'playing',
+    gameState: roundNumber  >= 4 ? 'game_over' : 'playing',
   };
 }
 

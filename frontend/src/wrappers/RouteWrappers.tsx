@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 
-import HomeScreen from "./pages/HomeScreen";
-import MultiplayerLobby from "./pages/MultiPlayerLobby";
-import MultiPlayerMode from "./pages/MultiPlayerMode";
-import { AppStateContext } from "./main";
+import HomeScreen from "../pages/HomeScreen";
+import MultiplayerLobby from "../pages/MultiPlayerLobby";
+import MultiPlayerMode from "../pages/MultiPlayerMode";
+import AppStateContext from "../context/AppStateContext";
 
 export const HomeRouteHandler = () => {
   const navigate = useNavigate();
