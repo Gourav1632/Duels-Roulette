@@ -19,7 +19,7 @@ class RoomManager {
 
 joinRoom(roomId: string, player: Player, password?: string) {
   const room = this.rooms.get(roomId);
-  if (!room) throw new Error('Room not found');
+  if (!room) throw new Error('Room not found. Please refresh to fetch new rooms.');
 
   if (room.isPrivate && password !== room.password) {
     throw new Error('Incorrect password');
@@ -79,7 +79,7 @@ leaveRoom(roomId: string, playerId: string): RoomData | undefined {
  
   getPublicRooms() {
   return Array.from(this.rooms.entries())
-    .filter(([_, room]) => !room.isPrivate)
+    .filter(([_, room]) => !room.isPrivate && room.players.length < room.maxPlayers && room.gameState === null)
     .map(([id, room]) => ({
       id,
       host: room.host,

@@ -6,6 +6,7 @@ import { emitPlayerAction, gameReady, leaveRoom, leaveVoiceRoom, onGameUpdate } 
 import { useSocket } from "../context/SocketContext";
 import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
 import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
+import GameOverScreen from "../components/GameUI/GameOverScreen";
 
 function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: string | null}) {
   
@@ -17,11 +18,11 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
   const [loading, setLoading] = useState<boolean>(false);
   const [showPlayingArea, setShowPlayingArea] = useState<boolean>(true);
   const socket = useSocket();
+
   const { isModalOpen, confirmLeave, cancelLeave } = useNavigationBlocker(
     {
-    shouldBlock: () => true,
+    shouldBlock: () =>  true,
     onConfirm: () => {
-  console.log("Requesting to leave room...");
       leaveVoiceRoom(socket, room?.id ?? "");
       leaveRoom(socket, room?.id ?? "", myPlayerId ?? "");
     }
@@ -49,7 +50,14 @@ useEffect(() => {
   }
 
   onGameUpdate(socket,(gameState, action, delay) => {
-
+      if (gameState.gameState === 'game_over') {
+        setCanDrink(false);
+        setCanStealItem(false);
+        setActionMessage(null); // Ensure EventArea is not rendered
+        setGame(gameState); // Trigger GameOverScreen
+        setShowPlayingArea(false); // Just in case layout hides it
+        return;
+      }
     if (action.type === "announce" && action.result) {
       setLoading(true);
       setGameMessage(action.result);
@@ -124,6 +132,24 @@ useEffect(() => {
 
     emitPlayerAction(socket, room.id, actionMessage, 5000);
   };
+
+if (game?.gameState === "game_over") {
+  return (
+    <div>
+      <GameOverScreen
+       isMultiplayer={true}
+       players={game.players}
+       onRestart={() => {
+       }}
+      />
+      <ConfirmLeaveModal
+        isOpen={isModalOpen}
+        onConfirm={confirmLeave}
+        onCancel={cancelLeave}
+      />
+    </div>
+  );
+}
 
 if (loading) return (
   <div

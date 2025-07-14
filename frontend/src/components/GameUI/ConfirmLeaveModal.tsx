@@ -36,7 +36,7 @@ const ConfirmLeaveModal: React.FC<ConfirmLeaveModalProps> = ({
         <div className="absolute w-2 h-2 bg-white bottom-[6px] right-[6px] shadow-[0_0_6px_#ffffff]" />
 
         {/* Main Box */}
-        <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 w-[90vw] max-w-md text-white relative space-y-6 rounded-md">
+        <div className=" bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 w-[90vw] max-w-md text-white relative space-y-6 rounded-md">
           <h2 className="text-2xl text-yellow-300 font-bold text-center">
             Leave the Game?
           </h2>

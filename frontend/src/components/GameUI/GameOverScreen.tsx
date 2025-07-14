@@ -4,11 +4,20 @@ import { useNavigate } from "react-router-dom";
 type Props = {
   players: Contestant[];
   onRestart: () => void;
+  isMultiplayer?: boolean; 
 };
 
-const GameOverScreen = ({ players, onRestart }: Props) => {
+const GameOverScreen = ({ players, onRestart, isMultiplayer }: Props) => {
   const sorted = [...players].sort((a, b) => b.score - a.score);
   const navigate = useNavigate();
+
+  const handleQuit = () => {
+    if(isMultiplayer) {
+      navigate("/multiplayerlobby");
+    } else {
+      navigate("/");
+    }
+  } 
 
   return (
     <div className="relative w-full min-h-screen overflow-hidden font-medievalsharp">
@@ -51,15 +60,15 @@ const GameOverScreen = ({ players, onRestart }: Props) => {
               ))}
             </ul>
 
-            <div className="text-center mt-8">
-              <button
+            <div className="text-center mt-8 flex justify-center items-center flex-wrap gap-2">
+              {!isMultiplayer && <button
                 onClick={onRestart}
                 className="bg-yellow-500 hover:bg-yellow-600 text-black font-cinzel font-semibold px-6 py-2 rounded shadow-lg transition duration-200"
               >
                 Restart
-              </button>
+              </button>}
               <button
-                onClick={() => navigate("/")}
+                onClick={handleQuit}
                 className="ml-4 bg-gray-700 hover:bg-gray-600 text-white font-cinzel font-semibold px-6 py-2 rounded shadow-lg transition duration-200"
               >
                 Quit

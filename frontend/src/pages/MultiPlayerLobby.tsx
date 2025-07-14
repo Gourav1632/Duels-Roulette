@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   createRoom,
@@ -11,10 +11,15 @@ import {
   leaveRoom,
   startGame,
   onGameStarted,
+  leaveVoiceRoom,
 } from "../utils/socket";
 import { v4 as uuidv4 } from "uuid";
 import type { PublicRoomData, RoomData } from "../../../shared/types/types";
 import { useSocket } from "../context/SocketContext";
+import { FaMicrophone, FaMicrophoneSlash } from "react-icons/fa";
+import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
+import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
+
 
 
 
@@ -35,10 +40,24 @@ const MultiplayerLobby = ({
   const [room, setRoom] = useState<RoomData | null>(null);
   const [publicRooms, setPublicRooms] = useState<PublicRoomData[]>([]);
   const [voiceChatEnabled, setVoiceChatEnabled] = useState(false);
-
+  const shouldBlockRef = useRef(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const navigate = useNavigate();
   const socket = useSocket();
+  const {isModalOpen, confirmLeave, cancelLeave} = useNavigationBlocker(
+    {
+    shouldBlock: () => mode === "create" && shouldBlockRef.current,
+    onConfirm: () => {
+      if (room && playerId) {
+        if (voiceChatEnabled) {
+          leaveVoiceRoom(socket, room.id);
+        }
+        leaveRoom(socket, room.id, playerId);
+        setRoom(null);
+        setMyPlayerId(null);
+        setMode("default");
+      }
+    }});
 
 
 
@@ -52,6 +71,7 @@ const MultiplayerLobby = ({
     });
 
     onRoomUpdate(socket, (roomData) => {
+      setVoiceChatEnabled(roomData.voiceChatEnabled);
       setRoom(roomData);
       setRoomData(roomData);
       setMode(roomData ? "create" : "default");
@@ -64,6 +84,7 @@ const MultiplayerLobby = ({
     onError(socket, (error) => setErrorMessage(error.message));
 
     onGameStarted(socket, (roomData) => {
+      shouldBlockRef.current = false;
       setRoomData(roomData);
       navigate("/multiplayer");
     });
@@ -77,6 +98,10 @@ const MultiplayerLobby = ({
   }, []);
 
   function handleCreateRoom() {
+    if (!name || (isPrivate && !password)) {
+      setErrorMessage(isPrivate ? "Please enter name and password" : "Please enter name");
+      return;
+    }
     const host = { id: uuidv4(), name };
     setPlayerId(host.id);
     setMyPlayerId(host.id);
@@ -113,6 +138,11 @@ const MultiplayerLobby = ({
 
   return (
     <div className="relative flex items-center justify-center w-full min-h-screen overflow-auto">
+      <ConfirmLeaveModal
+        isOpen={isModalOpen}
+        onConfirm={confirmLeave}
+        onCancel={cancelLeave}
+      />
       {/* Background and Overlay */}
       <img
         src="/game_ui/homescreen.jpg"
@@ -181,6 +211,7 @@ const MultiplayerLobby = ({
               </>
             ) : mode === "create" ? (
               <>
+              {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
                 <input
                   type="text"
                   placeholder="Your Name"
@@ -231,7 +262,10 @@ const MultiplayerLobby = ({
                   Create Game
                 </button>
                 <button
-                  onClick={() => setMode("default")}
+                  onClick={() => {
+                    setMode("default")
+                    setErrorMessage("");
+                  }}
                   className="text-sm text-gray-400 hover:text-white underline"
                 >
                   Cancel
@@ -244,51 +278,60 @@ const MultiplayerLobby = ({
                   placeholder="Your Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="px-4 py-2 text-white rounded bg-zinc-800"
+                  className="px-4 w-full py-2 text-white rounded bg-zinc-800"
                 />
                 {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
 
                 <div className="border border-zinc-700 p-4 rounded">
                   <h2 className="text-lg font-semibold text-yellow-400 font-cinzel">Private Room</h2>
-                  <input
-                    type="text"
-                    placeholder="Room ID"
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value)}
-                    className="px-4 py-2 text-white rounded bg-zinc-800 mt-2"
-                  />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="px-4 py-2 text-white rounded bg-zinc-800 mt-2"
-                  />
-                  <button
+                  <div className="flex flex-col lg:flex-row items-center  justify-center gap-2 mt-2">
+                    <input
+                      type="text"
+                      placeholder="Room ID"
+                      value={roomId}
+                      onChange={(e) => setRoomId(e.target.value)}
+                      className="w-full px-4  py-2 text-white rounded bg-zinc-800 "
+                    />
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-2 text-white rounded bg-zinc-800 "
+                    />
+                    <button
                     onClick={() => handleJoinRoom(roomId, name, password, true)}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-black  py-2 px-4 rounded mt-2 font-cinzel font-semibold"
+                    className="bg-yellow-600 hover:bg-yellow-700 text-black text-xs sm:text-sm px-3 py-1 rounded font-cinzel font-semibold"
                   >
                     Join
                   </button>
+                  </div>
                 </div>
 
                 <div className="border border-zinc-700 p-4 rounded">
                   <h2 className="text-lg font-semibold text-green-400 mb-2 font-cinzel">Public Rooms</h2>
-                  <div className="grid gap-3">
+
+                  <div className="flex flex-col gap-3">
                     {publicRooms.map((room) => (
                       <div
                         key={room.id}
-                        className="flex justify-between items-center bg-zinc-800 px-4 py-2 rounded"
+                        className="flex flex-wrap items-center justify-between gap-2 bg-zinc-800 px-4 py-3 rounded"
                       >
-                        <span className="text-white">{room.host.name}</span>
-                        <span className="text-white">{room.id}</span>
+                        <span className="text-white font-cinzel text-sm sm:text-base">
+                          {room.host.name}
+                        </span>
+                        <span className="text-gray-300 text-xs sm:text-sm font-mono">
+                          {room.id}
+                        </span>
                         <span className="text-sm text-gray-400">
                           {room.playersActive}/{room.maxPlayers}
                         </span>
-                        <span>{room.voiceChatEnabled ? 'Voice Chat' : 'No Voice Chat'}</span>
+                        <span className="text-yellow-400 text-lg">
+                          {room.voiceChatEnabled ? <FaMicrophone /> : <FaMicrophoneSlash />}
+                        </span>
                         <button
                           onClick={() => handleJoinRoom(room.id, name)}
-                          className="bg-green-400 hover:bg-green-600 text-black text-sm px-3 py-1 rounded font-cinzel font-semibold"
+                          className="bg-green-400 hover:bg-green-600 text-black text-xs sm:text-sm px-3 py-1 rounded font-cinzel font-semibold"
                         >
                           Join
                         </button>
@@ -296,6 +339,7 @@ const MultiplayerLobby = ({
                     ))}
                   </div>
                 </div>
+
 
                 <button
                   onClick={() => setMode("default")}

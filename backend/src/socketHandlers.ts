@@ -22,6 +22,10 @@ export function registerSocketHandlers(io: Server) {
         const roomData = roomManager.getRoom(roomId);
         io.to(roomId).emit("room_update", roomData); // broadcast to all in room
         socket.emit("room_created", roomData); // send only to creator
+        if(!isPrivate) {
+          const publicRooms = roomManager.getPublicRooms();
+          io.emit("public_rooms", publicRooms)
+        }
     });
 
     socket.on("join_room", ({ roomId, player, password }) => {
@@ -36,26 +40,32 @@ export function registerSocketHandlers(io: Server) {
         io.to(roomId).emit("room_update", roomManager.getRoom(roomId));
     } catch (error: any) {
         console.error("Join room error:", error.message);
-        io.to(roomId).emit("error", { message: error.message });
+        socket.emit("error", { message: error.message });
     }
     });
 
     socket.on("leave_room", ({ roomId, playerId }) => {
     const roomData = roomManager.getRoom(roomId);
     const leavingPlayer = roomData?.players.find(p => p.id === playerId)?.name ?? "A player";
-    console.log(`Socket ${playerId} leaving room ${roomId}`);
     const newRoomData = roomManager.leaveRoom(roomId, playerId);
-    console.log("Players left :", newRoomData?.players.length);
     socket.leave(roomId);
     io.to(roomId).emit("room_update", newRoomData ?? null);
     if (newRoomData?.gameState) {
-    const actionMessage: ActionMessage = {
-      type: "announce",
-      userId: playerId,
-      result: `${leavingPlayer} has left the game.`,
+    if( newRoomData.gameState.players.length === 1) { 
+      const actionMessage: ActionMessage = {
+        type: "message",
+        result: `GAME OVER!`,
       };
-      console.log("sending game update after player left");
+      newRoomData.gameState.gameState = 'game_over';
       io.to(roomId).emit("game_update", newRoomData.gameState, actionMessage, 5000);
+    } else {
+      const actionMessage: ActionMessage = {
+        type: "announce",
+        userId: playerId,
+        result: `${leavingPlayer} has left the game.`,
+        };
+        io.to(roomId).emit("game_update", newRoomData.gameState, actionMessage, 5000);
+    }
     }
     });
 
@@ -134,8 +144,7 @@ export function registerSocketHandlers(io: Server) {
           
           setTimeout(() => {
             const messageType = result.actionMessage.type;
-            if (messageType === 'refill' || messageType === 'error' || messageType === 'announce' || messageType === 'skip') {
-              io.to(roomId).emit("game_update", room.gameState, result.actionMessage, result.delay)
+            if (messageType === 'refill' || messageType === 'error' || messageType === 'announce' || messageType === 'skip') {             io.to(roomId).emit("game_update", room.gameState, result.actionMessage, result.delay)
             }
 
           }, 2000);
@@ -193,7 +202,7 @@ export function registerSocketHandlers(io: Server) {
 
         setTimeout(() => {
             const messageType = result.actionMessage.type;
-            if (messageType === 'refill' || messageType === 'error' || messageType === 'announce' || messageType === 'skip') {
+            if (messageType === 'refill' || messageType === 'error' || messageType === 'announce' || messageType === 'skip' || messageType === 'message') {
               io.to(roomId).emit("game_update", room.gameState, result.actionMessage, result.delay)
             }
           },2000);
