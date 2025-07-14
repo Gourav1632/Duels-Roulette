@@ -1,9 +1,14 @@
 import { attributions } from "../data/attributions";
 
+
 const Credits = () => {
 
+
+
   return (
+
     <div className="relative w-full flex items-center justify-center min-h-screen overflow-auto">
+
       {/* Background Image */}
       <img
         src="/game_ui/homescreen.jpg"

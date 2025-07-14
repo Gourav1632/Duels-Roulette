@@ -81,6 +81,7 @@ function SinglePlayerMode() {
       isAI: false,
       isOnline: true,
       statusEffects: [],
+      score: 0,
     };
 
     const automatonPlayer: Contestant = {
@@ -91,6 +92,7 @@ function SinglePlayerMode() {
       isAI: true,
       isOnline: false,
       statusEffects: [],
+      score: 0,
     };
 
 

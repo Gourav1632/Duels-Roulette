@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import EventArea from '../components/GameUI/EventArea';
 import PlayingArea from '../components/GameUI/PlayingArea';
 import type { ActionMessage, ItemType, GameState, RoomData } from "../../../shared/types/types";
-import { emitPlayerAction, gameReady, onGameUpdate } from "../utils/socket";
+import { emitPlayerAction, gameReady, leaveRoom, leaveVoiceRoom, onGameUpdate } from "../utils/socket";
 import { useSocket } from "../context/SocketContext";
+import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
+import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
 
 function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: string | null}) {
   
@@ -15,6 +17,15 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
   const [loading, setLoading] = useState<boolean>(false);
   const [showPlayingArea, setShowPlayingArea] = useState<boolean>(true);
   const socket = useSocket();
+  const { isModalOpen, confirmLeave, cancelLeave } = useNavigationBlocker(
+    {
+    shouldBlock: () => true,
+    onConfirm: () => {
+  console.log("Requesting to leave room...");
+      leaveVoiceRoom(socket, room?.id ?? "");
+      leaveRoom(socket, room?.id ?? "", myPlayerId ?? "");
+    }
+  });  
 
   
 useEffect(() => {
@@ -54,6 +65,7 @@ useEffect(() => {
       });
     }
   });
+
 
   gameReady(socket,room.id);
 
@@ -149,6 +161,12 @@ if (loading) return (
   return (
     <div className="flex w-full h-screen bg-black text-white">
 
+      <ConfirmLeaveModal
+        isOpen={isModalOpen}
+        onConfirm={confirmLeave}
+        onCancel={cancelLeave}
+      />
+
       {/* Mobile view  */}
       {/* Left Panel - Game Scene */}
       <div className={` ${ showPlayingArea ? 'w-[100%]' : 'w-0'} lg:hidden relative bg-table-pattern`}>
@@ -203,8 +221,6 @@ if (loading) return (
           />
         }
       </div>
-
-      
     </div>
   );
 }

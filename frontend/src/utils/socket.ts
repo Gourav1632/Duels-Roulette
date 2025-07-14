@@ -39,9 +39,9 @@ export const emitPlayerAction = (
 export const leaveRoom = (
   socket: Socket,
   roomId: string,
-  player: { id: string; name: string }
+  playerId: string,
 ) => {
-  socket.emit("leave_room", { roomId, player });
+  socket.emit("leave_room", { roomId, playerId });
 };
 
 export const startGame = (socket: Socket, roomId: string) => {

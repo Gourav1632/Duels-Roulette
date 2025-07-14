@@ -40,12 +40,24 @@ export function registerSocketHandlers(io: Server) {
     }
     });
 
-    socket.on("leave_room", ({ roomId, player }) => {
-    const roomData = roomManager.leaveRoom(roomId, player.id);
+    socket.on("leave_room", ({ roomId, playerId }) => {
+    const roomData = roomManager.getRoom(roomId);
+    const leavingPlayer = roomData?.players.find(p => p.id === playerId)?.name ?? "A player";
+    console.log(`Socket ${playerId} leaving room ${roomId}`);
+    const newRoomData = roomManager.leaveRoom(roomId, playerId);
+    console.log("Players left :", newRoomData?.players.length);
     socket.leave(roomId);
-    io.to(roomId).emit("room_update", roomData ?? null);
+    io.to(roomId).emit("room_update", newRoomData ?? null);
+    if (newRoomData?.gameState) {
+    const actionMessage: ActionMessage = {
+      type: "announce",
+      userId: playerId,
+      result: `${leavingPlayer} has left the game.`,
+      };
+      console.log("sending game update after player left");
+      io.to(roomId).emit("game_update", newRoomData.gameState, actionMessage, 5000);
+    }
     });
-
 
 
     socket.on("fetch_rooms", () => {
@@ -215,17 +227,14 @@ export function registerSocketHandlers(io: Server) {
       });
 
       socket.on("leave-voice", (roomId: string) => {
-        if (socket.rooms.has(roomId)) {
           socket.to(roomId).emit("leave-voice", socket.id);
-        } else {
-          console.warn(`⚠️ Socket ${socket.id} tried to leave voice in unknown room ${roomId}`);
-        }
       });
 
 
 
 
     socket.on("disconnecting", () => {
+      console.log(`⚡ Client disconnected: ${socket.id}`);
       const rooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
       for (const roomId of rooms) {
         roomManager.leaveRoom(roomId, socket.id);

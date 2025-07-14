@@ -1,5 +1,5 @@
 // backend/src/utils/roomManager.ts
-import { GameState, Player, RoomData } from "../../../shared/types/types";
+import { Contestant, GameState, Player, RoomData } from "../../../shared/types/types";
 
 class RoomManager {
   private rooms: Map<string, RoomData> = new Map();
@@ -37,26 +37,45 @@ joinRoom(roomId: string, player: Player, password?: string) {
   room.players.push(player);
 }
 
+leaveRoom(roomId: string, playerId: string): RoomData | undefined {
+  const room = this.rooms.get(roomId);
+  if (!room) return;
 
-  leaveRoom(roomId: string, playerId: string): RoomData | undefined {
-    const room = this.rooms.get(roomId);
-    if (!room) return;
+  // If gameState exists, handle removal from game logic
+  if (room.gameState) {
+    const gamePlayers = room.gameState.players;
+    const indexOfLeavingPlayer = gamePlayers.findIndex(p => p.id === playerId);
+    const currentIndex = room.gameState.activePlayerIndex;
 
-    room.players = room.players.filter((p:Player)  => p.id !== playerId);
+    // Remove player from gameState
+    room.gameState.players = gamePlayers.filter(p => p.id !== playerId);
 
-    // delete room if empty
-    if (room.players.length === 0) {
-      this.rooms.delete(roomId);
-      console.log("room empty");
+    // Update turn if necessary
+    if (indexOfLeavingPlayer === currentIndex) {
+      room.gameState.activePlayerIndex %= room.gameState.players.length;
+    } else if (indexOfLeavingPlayer < currentIndex) {
+      room.gameState.activePlayerIndex -= 1;
     }
-
-      // If the leaving player was the host, assign a new host
-    if (room.host.id === playerId) {
-        room.host = room.players[0]; // promote the next player as host
-    }
-
-    return room;
   }
+
+  // Remove from general player list
+  room.players = room.players.filter(p => p.id !== playerId);
+
+  // Remove room if empty
+  if (room.players.length === 0) {
+    this.rooms.delete(roomId);
+    console.log("room empty");
+    return;
+  }
+
+  // Reassign host if host left
+  if (room.host.id === playerId) {
+    room.host = room.players[0];
+  }
+
+  return room;
+}
+
  
   getPublicRooms() {
   return Array.from(this.rooms.entries())

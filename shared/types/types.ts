@@ -31,6 +31,7 @@
     isAI: boolean;
     isOnline: boolean;
     statusEffects: StatusEffect[];
+    score: number;
   }
 
   export type Player =  {

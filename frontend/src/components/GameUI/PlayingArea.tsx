@@ -13,8 +13,6 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
   const [showMusicPopup, setShowMusicPopup] = useState(false);
 
 
-
-
   const handleUseItemAndPlayer = (item: ItemType) => {
     const selfTargetingItems: ItemType[] = [
     'royal_scrutiny_glass', // use to see if the current shot is poisnous or holy
@@ -114,9 +112,9 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
       >
         <div className="flex w-[500px] lg:w-[575px] justify-between   ">
           <PlayerImage canDrink={canDrink} handleStealItem={handleStealItem} canStealItem={canStealItem} myPlayerId={myPlayerId} pendingTargetSelect={pendingTargetSelect} index={1} player={players[0]} onClick={handlePlayerClick} />
-          <PlayerImage canDrink={canDrink} handleStealItem={handleStealItem}  canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={2} player={players[1]} onClick={handlePlayerClick} />
+          {playerCount >= 2 && <PlayerImage canDrink={canDrink} handleStealItem={handleStealItem}  canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={2} player={players[1]} onClick={handlePlayerClick} />}
         </div>
-        {playerCount !== 2 && (
+        {playerCount > 2 && (
           <div className="flex w-[500px] lg:w-[575px] justify-between   ">
             <PlayerImage canDrink={canDrink} handleStealItem={handleStealItem}  canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={3} player={players[2]} onClick={handlePlayerClick} />
             {playerCount === 4 && (

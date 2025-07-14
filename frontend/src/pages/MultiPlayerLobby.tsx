@@ -101,7 +101,7 @@ const MultiplayerLobby = ({
 
   function handleLeaveRoom() {
     if (!room || !playerId) return;
-    leaveRoom(socket, room.id, { id: playerId, name });
+    leaveRoom(socket, room.id, playerId);
     setRoom(null);
     setRoomId("");
     setMode("default");
