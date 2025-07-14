@@ -98,7 +98,7 @@ export function registerSocketHandlers(io: Server) {
         }));
 
         const initialized = initializeGame(gamePlayers);
-        const started = startRound(initialized, 3);
+        const started = startRound(initialized, 1);
         room.gameState = started;
 
         io.to(roomId).emit("game_started", room);
