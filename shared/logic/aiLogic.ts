@@ -18,6 +18,8 @@ function calculateActionScore(
   opponent: Contestant | undefined,
   pPoisonous: number
 ): number {
+
+
   let score = 0;
   score += 1;
 
@@ -162,6 +164,19 @@ export function automatonTakeTurn(game: GameState): { updatedGame: GameState, ac
     }
   }
 
+  // if ai knows about goblet from memory 
+
+    if (opponent && game.currentGobletIndex in gobletMemory) {
+      if (gobletMemory[game.currentGobletIndex] === 'poisonous') {
+        const drinkOpponent: Action = { type: 'drink', targetPlayerId: opponent.id };
+        return playTurn(game, drinkOpponent);
+      } else {
+          const drinkSelf: Action = { type: 'drink', targetPlayerId: aiPlayer.id };
+          return playTurn(game, drinkSelf);
+      }
+  }
+
+
   for (const item of aiPlayer.items) {
     let targetPlayerId: string | undefined = undefined;
     if ((item === 'royal_chain_order' || item === 'thiefs_tooth') && opponent) {
@@ -196,4 +211,11 @@ export function automatonTakeTurn(game: GameState): { updatedGame: GameState, ac
   }
   
   return playTurn(game, bestAction);
+}
+
+
+export function clearGobletMemory() {
+  for (const key in gobletMemory) {
+    delete gobletMemory[+key];
+  }
 }

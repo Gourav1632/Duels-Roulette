@@ -3,6 +3,7 @@ import { roomManager } from "./rooms/roomManager";
 import { playTurn, initializeGame, startRound } from "../../shared/logic/gameEngine";
 import { ActionMessage, Contestant, Player, StatusEffect } from "../../shared/types/types";
 import { handlePlayerTurn } from "./rooms/turnManager";
+import { emit } from "process";
 
 export function registerSocketHandlers(io: Server) {
   io.on("connection", (socket) => {
@@ -94,7 +95,6 @@ export function registerSocketHandlers(io: Server) {
           isAI: false,
           isOnline: true,
           statusEffects: [],
-          score: 0,
         }));
 
         const initialized = initializeGame(gamePlayers);
@@ -125,17 +125,14 @@ export function registerSocketHandlers(io: Server) {
           if(!room || !room.gameState) return;    
 
           const active = room.gameState.players[room.gameState.activePlayerIndex];
-          room.players.forEach((player : Player) => {
-            const isActive = player.id === active.id;
+
             const turnMessage: ActionMessage = {
-              type: "message",
+              type: "turn",
               userId: active.id,
-              result: isActive
-                ? `It is your turn.`
-                : `It is ${active.name}'s turn.`,
+              result: `It is ${active.name}'s turn.`,
             };
-            io.to(player.socketId).emit("game_update", room.gameState, turnMessage, 2000);
-          });
+
+          io.to(roomId).emit("game_update",room.gameState, turnMessage, 2000);
 
 
           const result = handlePlayerTurn(roomId, room.gameState)
@@ -144,10 +141,11 @@ export function registerSocketHandlers(io: Server) {
           
           setTimeout(() => {
             const messageType = result.actionMessage.type;
-            if (messageType === 'refill' || messageType === 'error' || messageType === 'announce' || messageType === 'skip') {             io.to(roomId).emit("game_update", room.gameState, result.actionMessage, result.delay)
+            if (messageType === 'refill' || messageType === 'error' || messageType === 'announce' || messageType === 'skip') {            
+              io.to(roomId).emit("game_update", room.gameState, result.actionMessage, result.delay)
             }
 
-          }, 2000);
+          }, 3000);
 
         }, 10000);
     })
@@ -183,18 +181,14 @@ export function registerSocketHandlers(io: Server) {
           if(!room || !room.gameState) return;    
 
           const active = room.gameState.players[room.gameState.activePlayerIndex];
-          room.players.forEach((player: Player) => {
-            const isActive = player.id === active.id;
-            const turnMessage: ActionMessage = {
-              type: "message",
-              userId: active.id,
-              result: isActive
-                ? `It is your turn.`
-                : `It is ${active.name}'s turn.`,
-            };
-            io.to(player.socketId).emit("game_update", room.gameState, turnMessage, 2000);
-          });
 
+            const turnMessage: ActionMessage = {
+              type: "turn",
+              userId: active.id,
+              result: `It is ${active.name}'s turn.`,
+            };
+
+          io.to(roomId).emit("game_update",room.gameState, turnMessage, 2000);
 
           const result = handlePlayerTurn(roomId, room.gameState)
           if(!result) return;
@@ -205,7 +199,7 @@ export function registerSocketHandlers(io: Server) {
             if (messageType === 'refill' || messageType === 'error' || messageType === 'announce' || messageType === 'skip' || messageType === 'message') {
               io.to(roomId).emit("game_update", room.gameState, result.actionMessage, result.delay)
             }
-          },2000);
+          },3000);
 
       }, delay);
     });

@@ -1,14 +1,14 @@
-import type { Contestant } from "../../../../shared/types/types";
+import type { Score } from "../../../../shared/types/types";
 import { useNavigate } from "react-router-dom";
 
 type Props = {
-  players: Contestant[];
+  scoreChart: Score[];
   onRestart: () => void;
   isMultiplayer?: boolean; 
 };
 
-const GameOverScreen = ({ players, onRestart, isMultiplayer }: Props) => {
-  const sorted = [...players].sort((a, b) => b.score - a.score);
+const GameOverScreen = ({ scoreChart, onRestart, isMultiplayer }: Props) => {
+  const sorted = [...scoreChart].sort((a, b) => b.score - a.score);
   const navigate = useNavigate();
 
   const handleQuit = () => {
@@ -49,13 +49,13 @@ const GameOverScreen = ({ players, onRestart, isMultiplayer }: Props) => {
 
             <h2 className="text-2xl text-yellow-300 font-semibold text-center mt-4">Scores</h2>
             <ul className="mt-4 space-y-2 max-w-md mx-auto">
-              {sorted.map((player: Contestant) => (
+              {sorted.map((scoreInfo: Score) => (
                 <li
-                  key={player.id}
+                  key={scoreInfo.playerId}
                   className="flex font-cinzel justify-between pb-2 text-lg"
                 >
-                  <span className="font-semibold text-white">{player.name}</span>
-                  <span className="text-yellow-300 font-semibold">{player.score}</span>
+                  <span className="font-semibold text-white">{scoreInfo.name}</span>
+                  <span className="text-yellow-300 font-semibold">{scoreInfo.score}</span>
                 </li>
               ))}
             </ul>

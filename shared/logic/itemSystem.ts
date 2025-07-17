@@ -100,10 +100,13 @@ export function SovereignPotion(game: GameState) {
 // Chronicle Ledger: Peeks at any random non-current goblet
 export function ChronicleLedger(game: GameState) {
   const { goblets, currentGobletIndex } = game;
+
   const availableIndices = goblets
     .map((_, i) => i)
-    .filter(i => i !== currentGobletIndex);
+    .filter(i => i >= currentGobletIndex);
+
   const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+  const relativeOffset = randomIndex - currentGobletIndex + 1;
   const isPoisonous = goblets[randomIndex];
   if (game.players[game.activePlayerIndex].isAI) {
     gobletMemory[randomIndex] = isPoisonous ? 'poisonous' : 'holy';
@@ -112,7 +115,7 @@ export function ChronicleLedger(game: GameState) {
     type: 'artifact_used',
     item: 'chronicle_ledger',
     userId: game.players[game.activePlayerIndex].id,
-    result: `${isPoisonous ? 'POISONOUS' : 'HOLY'}:${randomIndex}`,
+    result: `${isPoisonous ? 'POISONOUS' : 'HOLY'}:${relativeOffset}`,
   };
   return { updatedGame: game, actionMessage };
 }

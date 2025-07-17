@@ -17,7 +17,6 @@ function EventArea({
 
   useEffect(() => {
     if (actionMessage) {
-      
       setEventImagePath(actionMessage);
       renderGameLogMessage(actionMessage, players);
     }
@@ -30,6 +29,13 @@ function EventArea({
     if (!user) {
       setMessage("⚠️ Unknown player.");
       
+      return;
+    }
+
+
+    if ((msg.type === "turn") && msg.result) {
+      if ( msg.userId === myPlayerId) setMessage("It is your turn.");
+      else setMessage(msg.result);
       return;
     }
 
@@ -118,7 +124,22 @@ function EventArea({
           if (msg.userId === myPlayerId) {
             setTimeout(() => {
               const [result, goblet] = msg.result?.split(":") || [];
-              setMessage(`Goblet ${goblet} from now is ${result}.`);
+              let message = "";
+              switch(goblet) {
+                case '1': 
+                  message = `Current goblet is ${result}`;
+                  break;
+                case '2':
+                  message = `Next goblet is ${result}`;
+                  break;
+                case '3':
+                  message = `3rd goblet from now is ${result}`;
+                  break;
+                default:
+                  message = `${goblet}th goblet from now is ${result}`;
+                  break;
+              }
+              setMessage(message);
             }, 2500);
           }
           return;
@@ -158,7 +179,7 @@ function EventArea({
       return;
     }
     
-    if(msg.type === 'message') {
+    if(msg.type === 'message' || msg.type === 'turn') {
       const playerPrefix = msg.userId === myPlayerId ? "player1_scenes" : "player2_scenes";
       setImagePath(`/game_scenes/${playerPrefix}/lives.webp`);
       return;

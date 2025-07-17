@@ -14,6 +14,7 @@ import {
 import type { ActionMessage, ItemType, Contestant, GameState } from "../../../shared/types/types";
 import { automatonTakeTurn } from "../../../shared/logic/aiLogic";
 
+
 function SinglePlayerMode() {
   const [game, setGame] = useState<GameState | null>(null);
   const [actionMessage, setActionMessage] = useState<ActionMessage | null>(null);
@@ -22,14 +23,14 @@ function SinglePlayerMode() {
   const [canDrink, setCanDrink] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
+
   useEffect(()=>{
-    
     if(!game || game.gameState == 'loading' || game.gameState == 'game_over') return;
     const active = game.players[game.activePlayerIndex]
     const introMessage: ActionMessage = {
-      type: 'message',
+      type: 'turn',
       userId: active.id,
-      result: `It is ${active.name === 'You' ? 'your' :`${active.name}'s`} turn.`
+      result: `It is ${active.name}'s turn`,
     };
     if(game.activePlayerIndex === 0){
       triggerEvent(introMessage,2000,()=>{
@@ -58,7 +59,7 @@ function SinglePlayerMode() {
   }
 
 
-  function checkDeathsAndAdvance(game: GameState) {
+  function checkDeathsAndAdvance(game: GameState): boolean {
     const deadPlayers = game.players.filter(p => p.lives <= 0);
     if (deadPlayers.length > 0) {
       setLoading(true);
@@ -69,14 +70,16 @@ function SinglePlayerMode() {
         setGameMessage(`${deadPlayers.map(p => p.name).join(', ')} lost the round. Round ${nextround} starts with ${poisnousGoblets} poisoned and ${holyGoblets} holy goblets.`);
         setTimeout(() => {
           setLoading(false);
+          // check if after new round turn is human's
+          if (!updatedGame.players[updatedGame.activePlayerIndex].isAI) setCanDrink(true);
           setGame(updatedGame);
         }, 5000);
       } else {
         setGame(updatedGame);
       }
-    } else {
-      setGame(game);
-    }
+      return true;
+    } 
+    return false;
   }
 
   useEffect(() => {
@@ -89,7 +92,6 @@ function SinglePlayerMode() {
       isAI: false,
       isOnline: true,
       statusEffects: [],
-      score: 0,
     };
 
     const automatonPlayer: Contestant = {
@@ -100,13 +102,12 @@ function SinglePlayerMode() {
       isAI: true,
       isOnline: false,
       statusEffects: [],
-      score: 0,
     };
 
 
     const gamePlayers = [humanPlayer, automatonPlayer];
     const initialized = initializeGame(gamePlayers);
-    const started = startRound(initialized, 3);
+    const started = startRound(initialized, 1);
     // fetch round config
     const { poisnousGoblets, holyGoblets } = started.currentRound;
     const roundStartMessage: ActionMessage = {
@@ -125,13 +126,17 @@ function SinglePlayerMode() {
   function handlePlayerTurn(game:GameState){
     const active = game.players[game.activePlayerIndex];
 
+
+    // check if round is over 
+    const advanceRound = checkDeathsAndAdvance(game);
+    if(advanceRound) return;
+
     // check if player is chained
     const skipResult = skipIfChained(game, active);
     if (skipResult) {
       const { updatedGame, actionMessage } = skipResult;
       triggerEvent(actionMessage,5000, ()=>{
-        setGame(updatedGame);
-        checkDeathsAndAdvance(updatedGame);
+        setGame(updatedGame); 
       });
       return;
     }
@@ -163,13 +168,17 @@ function SinglePlayerMode() {
   function handleAITurn(game:GameState){
     setCanDrink(false);
     const active = game.players[game.activePlayerIndex];
+
+    // check if round is over 
+    const advanceRound = checkDeathsAndAdvance(game);
+    if(advanceRound) return;
+
     // check if player is chained
     const skipResult = skipIfChained(game, active);
     if (skipResult) {
       const { updatedGame, actionMessage } = skipResult;
       triggerEvent(actionMessage,5000, ()=>{
-        setGame(updatedGame);
-        checkDeathsAndAdvance(updatedGame);
+        setGame(updatedGame); 
       });
       return;
     }
@@ -186,9 +195,9 @@ function SinglePlayerMode() {
         setGame(updatedGame);
         handleAITurn(updatedGame);
       });
-
       return;
     }
+
     const {updatedGame,actionMessage} = automatonTakeTurn(game);
     triggerEvent(actionMessage,5000,()=>{
       setGame(updatedGame);
@@ -198,35 +207,42 @@ function SinglePlayerMode() {
       const AISurvivedSelfShot = actionMessage.type === 'drink' && actionMessage.targetId == actionMessage.userId && actionMessage.result === 'HOLY'
       if ( (AIUsedArtifact || AISurvivedSelfShot)  && updatedGame.players[updatedGame.activePlayerIndex].isAI) {
         handleAITurn(updatedGame); // Recursively call for next step
-      } else {
-        checkDeathsAndAdvance(updatedGame);
       }
-      }
-    )
+    })
 
   }
 
 
-  const handleDrink = (targetId: string) => {
-    if (!game || game.gameState !== "playing") return;
+const handleDrink = (targetId: string) => {
+  if (!game || game.gameState !== "playing") return;
 
-    const { updatedGame, actionMessage } = playTurn(game, {
-      type: "drink",
-      targetPlayerId: targetId
-    });
+  const { updatedGame, actionMessage } = playTurn(game, {
+    type: "drink",
+    targetPlayerId: targetId
+  });
 
-    triggerEvent(actionMessage,5000,()=>{
+  triggerEvent(actionMessage, 5000, () => {
+    const roundEnded = checkDeathsAndAdvance(updatedGame);
+    if (roundEnded) return;
+
+    if (updatedGame.gobletsRemaining === 0 && updatedGame.gameState === "playing") {
+      const refilledGame = refillChambers(updatedGame);
+      const refillMsg: ActionMessage = {
+        type: 'refill',
+        userId: updatedGame.players[updatedGame.activePlayerIndex].id,
+        result: `Guard refills the goblets. It has ${refilledGame.currentRound.holyGoblets} holy and ${refilledGame.currentRound.poisnousGoblets} poisoned goblets.`
+      };
+      triggerEvent(refillMsg, 5000, () => {
+        setGame(refilledGame);
+        setCanDrink(true);
+      });
+    } else {
       setGame(updatedGame);
-      checkDeathsAndAdvance(updatedGame);
       setCanDrink(true);
-    });
-
-    if (updatedGame.gameState === "round_over") {
-      setGameMessage(`Round ${updatedGame.currentRound.round} ends.`);
-    } else if (updatedGame.gameState === "game_over") {
-      setGameMessage(`Justice has been served.`);
     }
-  };
+  });
+};
+
 
   const handleUseItem = (item: ItemType, targetId: string) => {
     if (!game || game.gameState !== "playing") return;
@@ -262,7 +278,7 @@ function SinglePlayerMode() {
 if (game?.gameState === "game_over") {
   return (
     <GameOverScreen
-      players={game.players}
+      scoreChart={game.scoreChart}
       onRestart={() => {
         window.location.reload();
       }}
@@ -313,6 +329,7 @@ if (loading) return (
       <div className={` ${ canDrink || canStealItem ? 'w-[100%]' : 'w-0'} lg:hidden relative bg-table-pattern`}>
         {game && game.players && gameMessage &&
           <PlayingArea
+            currentPlayerId={game.players[game.activePlayerIndex].id}
             handleDrink={handleDrink}
             handleStealItem={handleStealItem}
             canStealItem={canStealItem}
@@ -320,6 +337,8 @@ if (loading) return (
             myPlayerId={game.players[0].id}
             handleUseItem={handleUseItem}
             players={game.players}
+            scoreChart={game.scoreChart}
+
           />
         }
       </div>
@@ -348,6 +367,9 @@ if (loading) return (
             myPlayerId={game.players[0].id}
             handleUseItem={handleUseItem}
             players={game.players}
+            currentPlayerId={game.players[game.activePlayerIndex].id}
+            scoreChart={game.scoreChart}
+
           />
         }
       </div>

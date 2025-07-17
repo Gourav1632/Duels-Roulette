@@ -7,6 +7,7 @@ import { useSocket } from "../context/SocketContext";
 import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
 import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
 import GameOverScreen from "../components/GameUI/GameOverScreen";
+import { useNavigate } from "react-router-dom";
 
 function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: string | null}) {
   
@@ -16,8 +17,9 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
   const [canStealItem, setCanStealItem] = useState<boolean>(false);
   const [canDrink, setCanDrink] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [showPlayingArea, setShowPlayingArea] = useState<boolean>(true);
+  const [showEventArea, setShowEventArea] = useState<boolean>(true);
   const socket = useSocket();
+  const navigate = useNavigate();
 
   const { isModalOpen, confirmLeave, cancelLeave } = useNavigationBlocker(
     {
@@ -28,25 +30,49 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
     }
   });  
 
+
+useEffect(() => {
+  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    // Show browser's native confirm dialog
+    e.preventDefault();
+    e.returnValue = ''; // Required for Chrome
+  };
+
+  const handleUnload = () => {
+    // This only runs if user actually confirms (reloads or closes tab)
+    if (room && myPlayerId) {
+      if (room.voiceChatEnabled) {
+        leaveVoiceRoom(socket, room.id);
+      }
+      leaveRoom(socket, room.id, myPlayerId);
+    }
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  window.addEventListener("unload", handleUnload);
+
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.removeEventListener("unload", handleUnload);
+  };
+}, [room, myPlayerId, socket]);
+
   
 useEffect(() => {
   if (!room?.id) return;
 
   function updateTurnState(gameState: GameState) {
     const currentTurn = gameState.players[gameState.activePlayerIndex];
-
-    // Reset interaction states
-    setCanDrink(false);
-    setCanStealItem(false);
-
-    const isThief = currentTurn.statusEffects.includes("thief");
     const isMyTurn = myPlayerId === currentTurn.id;
-
-    if (isMyTurn && !isThief) {
-      setCanDrink(true);
-    } else if (isMyTurn && isThief) {
-      setCanStealItem(true);
+    const isThief = currentTurn.statusEffects.includes("thief");
+    
+    if (!isMyTurn) {
+      setCanDrink(false);
+    } else {
+      if (isThief) setCanStealItem(true);
+      else setCanDrink(true);
     }
+    setShowEventArea(false);
   }
 
   onGameUpdate(socket,(gameState, action, delay) => {
@@ -55,7 +81,6 @@ useEffect(() => {
         setCanStealItem(false);
         setActionMessage(null); // Ensure EventArea is not rendered
         setGame(gameState); // Trigger GameOverScreen
-        setShowPlayingArea(false); // Just in case layout hides it
         return;
       }
     if (action.type === "announce" && action.result) {
@@ -86,11 +111,10 @@ useEffect(() => {
 
   // Utility to trigger an event and pause game logic until EventArea finishes
   function triggerEvent(action: ActionMessage, delay: number, next?: () => void) {
+    setShowEventArea(true);
     setActionMessage(action); // Show the message
-    setShowPlayingArea(false); // Hide the playing area
     setCanDrink(false) // disable player interaction when event
     setTimeout(() => {
-      setShowPlayingArea(true); // Show the playing area again
       if (next) next();       // Continue the game logic after delay
     }, delay);
   }
@@ -138,7 +162,7 @@ if (game?.gameState === "game_over") {
     <div>
       <GameOverScreen
        isMultiplayer={true}
-       players={game.players}
+       scoreChart={game.scoreChart}
        onRestart={() => {
        }}
       />
@@ -150,6 +174,34 @@ if (game?.gameState === "game_over") {
     </div>
   );
 }
+
+if (!room || !myPlayerId) {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-black text-white font-medievalsharp text-center px-6">
+      <h1 className="text-4xl md:text-5xl font-bold mb-4 text-yellow-400">Oops!</h1>
+      <p className="text-xl md:text-2xl mb-6">
+        Looks like you've entered an area you weren't supposed to.
+      </p>
+      <p className="text-md md:text-lg text-gray-300 mb-10">
+        Please go back and join or create a new room to continue your journey.
+      </p>
+      <button
+        onClick={()=> navigate("/multiplayerlobby")}
+        className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 transition-colors rounded text-black font-bold text-lg"
+      >
+        Return Home
+      </button>
+
+      <ConfirmLeaveModal
+        isOpen={isModalOpen}
+        onConfirm={confirmLeave}
+        onCancel={cancelLeave}
+      />
+
+    </div>
+  );
+}
+
 
 if (loading) return (
   <div
@@ -184,7 +236,7 @@ if (loading) return (
 
 
 
-  return (
+return (
     <div className="flex w-full h-screen bg-black text-white">
 
       <ConfirmLeaveModal
@@ -193,32 +245,34 @@ if (loading) return (
         onCancel={cancelLeave}
       />
 
-      {/* Mobile view  */}
-      {/* Left Panel - Game Scene */}
-      <div className={` ${ showPlayingArea ? 'w-[100%]' : 'w-0'} lg:hidden relative bg-table-pattern`}>
-        {game && game.players && myPlayerId &&
-          <PlayingArea
-            handleDrink={handleDrink}
-            handleStealItem={handleStealItem}
-            canStealItem={canStealItem}
-            canDrink={canDrink}
-            myPlayerId={myPlayerId}
-            handleUseItem={handleUseItem}
-            players={game.players}
-          />
-        }
-      </div>
+{/* Mobile view - Game Scene */}
+<div className="w-[100%] lg:hidden relative bg-table-pattern">
+  {game && game.players && myPlayerId &&
+    <PlayingArea
+      handleDrink={handleDrink}
+      handleStealItem={handleStealItem}
+      canStealItem={canStealItem}
+      canDrink={canDrink}
+      myPlayerId={myPlayerId}
+      handleUseItem={handleUseItem}
+      players={game.players}
+      currentPlayerId={game.players[game.activePlayerIndex].id}
+      scoreChart={game.scoreChart}
+    />
+  }
+  
+  {/* Overlay EventArea when needed */}
+  {game && myPlayerId && showEventArea && actionMessage && (
+    <div className="absolute inset-0 z-50 bg-zinc-900 bg-opacity-95 overflow-y-auto border-l border-gray-700">
+      <EventArea
+        myPlayerId={myPlayerId}
+        players={game.players}
+        actionMessage={actionMessage}
+      />
+    </div>
+  )}
+</div>
 
-      {/* Right Panel - Event Log / Animations */}
-      <div className={` ${ !showPlayingArea ? 'w-[100%]' : 'w-0'}  lg:hidden overflow-y-auto bg-zinc-900 border-l border-gray-700`}>
-        {game && actionMessage && myPlayerId &&
-          <EventArea
-            myPlayerId={myPlayerId}
-            players={game.players}
-            actionMessage={actionMessage}
-          />
-        }
-      </div>
 
 
       {/* Desktop view  */}
@@ -233,6 +287,9 @@ if (loading) return (
             myPlayerId={myPlayerId}
             handleUseItem={handleUseItem}
             players={game.players}
+            currentPlayerId={game.players[game.activePlayerIndex].id}
+            scoreChart={game.scoreChart}
+
           />
         }
       </div>
@@ -250,5 +307,7 @@ if (loading) return (
     </div>
   );
 }
+
+
 
 export default MultiPlayerMode;

@@ -39,7 +39,7 @@ joinRoom(roomId: string, player: Player, password?: string) {
 
 leaveRoom(roomId: string, playerId: string): RoomData | undefined {
   const room = this.rooms.get(roomId);
-  if (!room) return;
+  if (!room) return;  
 
   // If gameState exists, handle removal from game logic
   if (room.gameState) {

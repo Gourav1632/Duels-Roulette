@@ -1,9 +1,14 @@
-import type { RoundConfig, GameState, Contestant, ItemType, ActionMessage } from '../types/types';
+import type { RoundConfig, GameState, Contestant, ItemType, ActionMessage, Score } from '../types/types';
 import { Item } from './itemSystem';
-import { gobletCountMemory } from './aiLogic';
+import { clearGobletMemory, gobletCountMemory } from './aiLogic';
 
 // Initialize a new game
 export function initializeGame(players: Contestant[]): GameState {
+  const scoreChart = players.map(p => ({
+    playerId: p.id,
+    name: p.name,
+    score: 0,
+  }));
   return {
     players,
     currentRound: generateRoundConfig(1),
@@ -13,6 +18,7 @@ export function initializeGame(players: Contestant[]): GameState {
     gobletsRemaining: 0,
     turnOrderDirection: 'clockwise',
     gameState: 'loading',
+    scoreChart: scoreChart
   };
 }
 
@@ -52,7 +58,7 @@ export function startRound(game: GameState, roundNumber: number): GameState {
 
 // Play a turn
 export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' | string; targetPlayerId?: string; itemType?: ItemType }): { updatedGame: GameState, actionMessage: ActionMessage } {
-  const { activePlayerIndex, players, goblets, currentGobletIndex, turnOrderDirection } = game;
+  const { activePlayerIndex, players, goblets, currentGobletIndex, turnOrderDirection, scoreChart } = game;
   const activePlayer = players[activePlayerIndex];
 
   if (action.type === 'drink') {
@@ -74,7 +80,15 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
 
     const isPoisonous = goblets[currentGobletIndex];
 
+
+    // update ai memory
     if (isPoisonous) {
+      gobletCountMemory.poisonousGoblets--;
+    } else {
+      gobletCountMemory.holyGoblets--;
+    }
+
+    if (isPoisonous) { 
       const damage = hasAmplified ? 2 : 1;
       updatedPlayers[targetPlayerIndex] = {
         ...updatedPlayers[targetPlayerIndex],
@@ -82,16 +96,49 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
       };
       updatedPlayers[activePlayerIndex] = {
         ...updatedPlayers[activePlayerIndex],
-        score: updatedPlayers[activePlayerIndex].score + 2 , // increment score for causing damage or taking risk
       };
+
+      const updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
+        scoreInfo.playerId === activePlayer.id
+          ? { ...scoreInfo, score: scoreInfo.score + 2 }
+          : scoreInfo
+      );
+
+    const updatedGame = {
+      ...game,
+      scoreChart: updatedScoreChart,
+      players: updatedPlayers,
+      currentGobletIndex: (currentGobletIndex + 1) % goblets.length,
+      gobletsRemaining: game.gobletsRemaining - 1,
+      activePlayerIndex: getNextPlayerIndex(activePlayerIndex, players.length, turnOrderDirection),
+    };
+
+    
+    return {
+      updatedGame,
+      actionMessage: {
+        type: 'drink',
+        userId: activePlayer.id,
+        targetId: targetPlayerId,
+        result: isPoisonous ? 'POISON' : 'HOLY',
+      }
+    };
+
     } else {
       if (targetPlayerIndex === activePlayerIndex) {
         updatedPlayers[activePlayerIndex] = {
           ...updatedPlayers[activePlayerIndex],
-          score: updatedPlayers[activePlayerIndex].score + 2, // increment score for taking risk
         };
+
+      const updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
+        scoreInfo.playerId === activePlayer.id
+          ? { ...scoreInfo, score: scoreInfo.score + 2 }
+          : scoreInfo
+      );
+
         const nextGame = {
           ...game,
+          scoreChart: updatedScoreChart,
           players: updatedPlayers,
           currentGobletIndex: (currentGobletIndex + 1) % goblets.length,
           gobletsRemaining: game.gobletsRemaining - 1,
@@ -108,29 +155,7 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
       }
     }
 
-    const updatedGame = {
-      ...game,
-      players: updatedPlayers,
-      currentGobletIndex: (currentGobletIndex + 1) % goblets.length,
-      gobletsRemaining: game.gobletsRemaining - 1,
-      activePlayerIndex: getNextPlayerIndex(activePlayerIndex, players.length, turnOrderDirection),
-    };
 
-    if (isPoisonous) {
-      gobletCountMemory.poisonousGoblets--;
-    } else {
-      gobletCountMemory.holyGoblets--;
-    }
-
-    return {
-      updatedGame,
-      actionMessage: {
-        type: 'drink',
-        userId: activePlayer.id,
-        targetId: targetPlayerId,
-        result: isPoisonous ? 'POISON' : 'HOLY',
-      }
-    };
   } else if (action.type === 'use_item' && action.itemType) {
     const itemType = action.itemType;
     // if status is thief
@@ -156,10 +181,15 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
     const updatedPlayers = [...players];
     updatedPlayers[activePlayerIndex] = {
       ...updatedPlayers[activePlayerIndex],
-      score : updatedPlayers[activePlayerIndex].score - 1, // decrement score for using item
     }
 
-    const updatedGame = Item({...game, players: updatedPlayers }, itemType, action.targetPlayerId);
+      const updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
+        scoreInfo.playerId === activePlayer.id
+          ? { ...scoreInfo, score: scoreInfo.score - 1 } // decrement score for using item
+          : scoreInfo
+      );
+
+    const updatedGame = Item({...game, scoreChart: updatedScoreChart, players: updatedPlayers }, itemType, action.targetPlayerId);
 
     return updatedGame;
   }
@@ -169,20 +199,62 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
 
 // End a round
 export function nextRound(game: GameState, roundNumber: number): GameState {
-  const { players } = game;
-  // add the score = 2* health remaining for each player
-  players.forEach(player => {
-    player.score += 2*player.lives;
-  });
+
+  const { players,scoreChart } = game;
+
+
+    const updatedScoreChart = scoreChart.map((scoreInfo: Score) =>{
+      const player = players.find((p: Contestant)=> p.id === scoreInfo.playerId);
+      const bonus = player ? 2 * player.lives : 0; // add twice points as life remaining
+      return {
+        ... scoreInfo,
+        score: scoreInfo.score + bonus
+      }
+    });
+
+  // if round 3 is over 
+  if (roundNumber >= 4) {
+    return {
+      ...game,
+      scoreChart: updatedScoreChart,
+      gameState: 'game_over',
+    };
+
+  }
+
   const nextRoundConfig = generateRoundConfig(roundNumber);
   if (!nextRoundConfig) throw new Error(`Invalid round number: ${roundNumber}`);
 
+  const { poisnousGoblets, holyGoblets } = nextRoundConfig;
+
+  clearGobletMemory();
+  gobletCountMemory.poisonousGoblets = poisnousGoblets;
+  gobletCountMemory.holyGoblets = holyGoblets;
+
+  const goblets: boolean[] = [];
+  for (let i = 0; i < poisnousGoblets; i++) goblets.push(true);
+  for (let i = 0; i < holyGoblets; i++) goblets.push(false);
+  shuffleArray(goblets);
+
+  const itemsPerPlayer = nextRoundConfig.itemCount;
+  const updatedPlayers = game.players.map(player => ({
+    ...player,
+    lives: nextRoundConfig.lives,
+    items: getRandomItems(itemsPerPlayer),
+    statusEffects: [],
+  }));
 
   return {
     ...game,
+    goblets,
+    scoreChart: updatedScoreChart,
+    currentGobletIndex: 0,
+    gobletsRemaining: goblets.length,
+    players: updatedPlayers,
+    gameState: 'playing',
     currentRound: nextRoundConfig,
-    gameState: roundNumber  >= 4 ? 'game_over' : 'playing',
   };
+
 }
 
 function shuffleArray<T>(array: T[]): void {
@@ -275,6 +347,7 @@ export function refillChambers(game: GameState): GameState {
 
     return {
       ...game,
+      currentRound: sameRoundConfig,
       players: updatedPlayers,
       goblets: newGoblets,
       currentGobletIndex: 0,

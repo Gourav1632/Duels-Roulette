@@ -59,6 +59,24 @@ const MultiplayerLobby = ({
       }
     }});
 
+    useEffect(() => {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        if (room && playerId && shouldBlockRef.current) {
+          if (voiceChatEnabled) {
+            leaveVoiceRoom(socket, room.id);
+          }
+          leaveRoom(socket, room.id, playerId);
+          setRoom(null);
+          setMyPlayerId(null);
+          setMode("default");
+          e.preventDefault();
+          e.returnValue = "";
+        }
+      };
+
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [room, playerId, voiceChatEnabled, socket]);
 
 
   useEffect(() => {

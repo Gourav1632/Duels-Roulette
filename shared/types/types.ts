@@ -2,7 +2,7 @@
   export type StatusEffect = 'chained' | 'amplified' | 'thief' | string;
 
   export type ActionMessage = {
-    type: 'drink' | 'artifact_used' | 'skip' | 'refill' | 'message' | 'refill' | 'announce' | string;
+    type: 'drink' | 'artifact_used' | 'skip' | 'refill' | 'message' | 'refill' | 'announce' | 'turn' | string;
     item?: ItemType;
     userId?: string;
     targetId?: string;
@@ -31,13 +31,18 @@
     isAI: boolean;
     isOnline: boolean;
     statusEffects: StatusEffect[];
-    score: number;
   }
 
   export type Player =  {
     id:string;
     name: string;
     socketId: string;
+  }
+
+  export type Score = {
+    playerId: string;
+    name: string;
+    score: number;
   }
 
   export type GameStatePhase = 'loading' | 'playing' | 'round_over' | 'game_over';
@@ -51,6 +56,7 @@
     gobletsRemaining: number;
     turnOrderDirection: 'clockwise' | 'counter-clockwise';
     gameState: GameStatePhase;
+    scoreChart : Score[]; 
   } 
 
   export type RoundConfig = {

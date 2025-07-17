@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
-import type { Contestant } from "../../../../shared/types/types";
+import type { Score } from "../../../../shared/types/types";
 
 type Props = {
-  players: Contestant[];
+  scoreChart: Score[];
   onClose: () => void;
 };
 
-const Scoreboard = ({ players, onClose }: Props) => {
-  const sorted = [...players].sort((a, b) => b.score - a.score);
+const Scoreboard = ({ scoreChart, onClose }: Props) => {
+  const sorted = [...scoreChart].sort((a, b) => b.score - a.score);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,14 +41,14 @@ const Scoreboard = ({ players, onClose }: Props) => {
 
         {/* Player List */}
         <ul className="space-y-4 px-4 lg:w-[70%] mx-auto mb-8">
-          {sorted.map((player) => (
+          {sorted.map((scoreInfo: Score) => (
             <li
-              key={player.id}
+              key={scoreInfo.playerId}
               className="flex justify-between items-center pb-2 text-lg font-cinzel text-white"
             >
-              <span className="text-xl">{player.name}</span>
+              <span className="text-xl">{scoreInfo.name}</span>
               <span className="text-yellow-300 font-bold text-xl">
-                {player.score}
+                {scoreInfo.score}
               </span>
             </li>
           ))}

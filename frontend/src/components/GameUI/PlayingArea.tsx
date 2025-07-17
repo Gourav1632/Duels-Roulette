@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ItemSelector from "./ItemSelector";
-import type { Contestant, ItemType } from "../../../../shared/types/types";
+import type { Contestant, ItemType, Score } from "../../../../shared/types/types";
 import Typewriter from 'typewriter-effect';
 import ItemHelp from "./ItemHelp";
 import MusicSelector from "./MusicSelector";
@@ -8,10 +8,12 @@ import Scoreboard from "./Scoreboard";
 import { GiScrollUnfurled } from "react-icons/gi";
 import { GiMusicalNotes } from "react-icons/gi";
 import { IoMdHelp } from "react-icons/io";
+import { IoMdArrowDropdown } from "react-icons/io";
 
 
 
-const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, handleStealItem, handleDrink }: { canStealItem:boolean, canDrink:boolean, myPlayerId:string, players: Contestant[], handleUseItem: (item: ItemType, targetId: string) => void; handleStealItem:(item:ItemType, targetId:string) => void; handleDrink:(targetId:string)=> void}) => {
+
+const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, handleStealItem, handleDrink, currentPlayerId, scoreChart }: { canStealItem:boolean, canDrink:boolean, myPlayerId:string, players: Contestant[], handleUseItem: (item: ItemType, targetId: string) => void; handleStealItem:(item:ItemType, targetId:string) => void; handleDrink:(targetId:string)=> void; currentPlayerId : string; scoreChart : Score[]}) => {
   const [pendingTargetSelect, setPendingTargetSelect] = useState<boolean>(false);
   const [itemSelected,setItemSelected] = useState<ItemType | null> (null);
   const [showHelp, setShowHelp] = useState(false);
@@ -97,7 +99,7 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
 
       {showHelp && <ItemHelp onClose={() => setShowHelp(false)} />}
       {showMusicPopup && <MusicSelector onClose={() => setShowMusicPopup(false)} />}
-      {showScoreboard && <Scoreboard players={players} onClose={() => setShowScoreboard(false)} />}
+      {showScoreboard && <Scoreboard scoreChart={scoreChart} onClose={() => setShowScoreboard(false)} />}
 
 
 
@@ -131,14 +133,14 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
         } flex flex-col items-center space-y-4  `}
       >
         <div className="flex w-[500px] lg:w-[575px] justify-between   ">
-          <PlayerImage canDrink={canDrink} handleStealItem={handleStealItem} canStealItem={canStealItem} myPlayerId={myPlayerId} pendingTargetSelect={pendingTargetSelect} index={1} player={players[0]} onClick={handlePlayerClick} />
-          {playerCount >= 2 && <PlayerImage canDrink={canDrink} handleStealItem={handleStealItem}  canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={2} player={players[1]} onClick={handlePlayerClick} />}
+          <PlayerImage currentPlayerId={currentPlayerId} canDrink={canDrink} handleStealItem={handleStealItem} canStealItem={canStealItem} myPlayerId={myPlayerId} pendingTargetSelect={pendingTargetSelect} index={1} player={players[0]} onClick={handlePlayerClick} />
+          {playerCount >= 2 && <PlayerImage currentPlayerId={currentPlayerId} canDrink={canDrink} handleStealItem={handleStealItem}  canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={2} player={players[1]} onClick={handlePlayerClick} />}
         </div>
         {playerCount > 2 && (
           <div className="flex w-[500px] lg:w-[575px] justify-between   ">
-            <PlayerImage canDrink={canDrink} handleStealItem={handleStealItem}  canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={3} player={players[2]} onClick={handlePlayerClick} />
+            <PlayerImage currentPlayerId={currentPlayerId} canDrink={canDrink} handleStealItem={handleStealItem}  canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={3} player={players[2]} onClick={handlePlayerClick} />
             {playerCount === 4 && (
-              <PlayerImage canDrink={canDrink}  handleStealItem={handleStealItem} canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={4} player={players[3]} onClick={handlePlayerClick} />
+              <PlayerImage currentPlayerId={currentPlayerId} canDrink={canDrink}  handleStealItem={handleStealItem} canStealItem={canStealItem} myPlayerId={myPlayerId}  pendingTargetSelect={pendingTargetSelect} index={4} player={players[3]} onClick={handlePlayerClick} />
             )}
           </div>
         )}
@@ -168,6 +170,7 @@ const PlayerImage = ({
   canStealItem,
   canDrink,
   handleStealItem,
+  currentPlayerId
 }: {
   index: number;
   player: Contestant;
@@ -177,6 +180,7 @@ const PlayerImage = ({
   canStealItem: boolean;
   canDrink: boolean;
   handleStealItem: (item: ItemType, targetId: string) => void;
+  currentPlayerId: string;
 }) => (
   <div
     className={`relative flex-shrink-0 items-center gap-0 ${
@@ -203,6 +207,12 @@ const PlayerImage = ({
         }
       }}
     >
+        {player.id === currentPlayerId && (
+          <div className="absolute  -top-8 left-1/2 -translate-x-1/2 z-30 text-5xl  text-yellow-300 drop-shadow-[0_0_12px_#d4af37]">
+            <IoMdArrowDropdown />
+          </div>
+        )}
+
       <img
         src={`/game_scenes/player.png`}
         alt={`Player ${player.id}`}

@@ -62,7 +62,8 @@ export function handlePlayerTurn(
         room.gameState = nextRound(game, nextround);
         if(room.gameState.gameState !== "game_over") {
           const currentTurnId = room.gameState.players[room.gameState.activePlayerIndex].id;
-          const message: ActionMessage = {type: 'announce', userId: currentTurnId , result: `${deadPlayers.map(p => p.name).join(', ')} lost the round. Round ${nextround} begins!!!`}
+          const {poisnousGoblets, holyGoblets} = room.gameState.currentRound;
+          const message: ActionMessage = {type: 'announce', userId: currentTurnId , result: `${deadPlayers.map(p => p.name).join(', ')} lost the round. Round ${nextround} has ${poisnousGoblets} poisnous and ${holyGoblets} holy goblets.`}
           return { actionMessage: message};
         } else {
           const message: ActionMessage = { type: 'message', result: `Game Over!` };
