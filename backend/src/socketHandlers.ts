@@ -154,7 +154,7 @@ export function registerSocketHandlers(io: Server) {
               io.to(roomId).emit("game_update", room.gameState, result.actionMessage, result.delay)
             }
 
-          }, 3000);
+          }, 2500);
 
         }, 10000);
     })
@@ -208,7 +208,7 @@ export function registerSocketHandlers(io: Server) {
             if (messageType === 'refill' || messageType === 'error' || messageType === 'announce' || messageType === 'skip' || messageType === 'message') {
               io.to(roomId).emit("game_update", room.gameState, result.actionMessage, result.delay)
             }
-          },3000);
+          },2500);
 
       }, delay);
     });

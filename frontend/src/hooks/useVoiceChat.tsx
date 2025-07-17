@@ -18,6 +18,7 @@ export const useVoiceChat = (
 ) => {
   const peersRef = useRef<Record<string, RTCPeerConnection>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
+  const pendingCandidates = useRef<Record<string, RTCIceCandidateInit[]>>({});
 
   const createPeer = (userId: string, socket: Socket) => {
     const peer = new RTCPeerConnection({
@@ -38,11 +39,13 @@ export const useVoiceChat = (
 
     peer.onicecandidate = (ev) => {
       if (ev.candidate) {
+        console.log("📤 Sending ICE candidate to", userId);
         sendVoiceCandidate(socket, userId, ev.candidate);
       }
     };
 
     peer.ontrack = (ev) => {
+      console.log("🔊 Received remote audio track from", userId);
       const audio = document.createElement("audio");
       audio.id = `audio-${userId}`;
       audio.srcObject = ev.streams[0];
@@ -65,19 +68,40 @@ export const useVoiceChat = (
     if (!enabled || !roomId) return;
 
     const getMediaAndSetup = async () => {
-      // ✅ Set up listeners BEFORE getUserMedia
       onVoiceOffer(socket, async ({ from, offer }) => {
         console.log("📥 Received voice offer from", from);
         let peer = peersRef.current[from];
+
         if (!peer) {
           peer = createPeer(from, socket);
           peersRef.current[from] = peer;
-          localStreamRef.current?.getTracks().forEach((t) =>
-            peer!.addTrack(t, localStreamRef.current!)
-          );
+
+          if (!localStreamRef.current) {
+            console.log("🎤 Requesting microphone access (callee)...");
+            localStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log("🎤 Microphone access granted (callee)");
+          }
+
+          localStreamRef.current.getTracks().forEach((t) => {
+            console.log("🎙️ Adding local track (callee):", t.kind);
+            peer!.addTrack(t, localStreamRef.current!);
+          });
         }
 
         await peer.setRemoteDescription(offer);
+
+        // ✅ Apply early ICE candidates after setting remote description
+        const queued = pendingCandidates.current[from];
+        if (queued) {
+          console.log(`🧊 Applying ${queued.length} early ICE candidates`);
+          queued.forEach((candidate) => {
+            peer!.addIceCandidate(candidate).catch((err) =>
+              console.warn("🚫 Failed to add early ICE candidate:", err)
+            );
+          });
+          delete pendingCandidates.current[from];
+        }
+
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
         console.log("📤 Sending voice answer to", from);
@@ -95,8 +119,17 @@ export const useVoiceChat = (
       onVoiceCandidate(socket, ({ from, candidate }) => {
         console.log("➕ Received ICE candidate from", from);
         const peer = peersRef.current[from];
-        if (peer && candidate) {
-          peer.addIceCandidate(new RTCIceCandidate(candidate));
+
+        if (peer?.remoteDescription) {
+          peer.addIceCandidate(candidate).catch((err) => {
+            console.warn("🚫 Failed to add ICE candidate:", err);
+          });
+        } else {
+          console.log("🧊 Queuing ICE candidate (remoteDescription not set yet)");
+          if (!pendingCandidates.current[from]) {
+            pendingCandidates.current[from] = [];
+          }
+          pendingCandidates.current[from].push(candidate);
         }
       });
 
@@ -109,10 +142,12 @@ export const useVoiceChat = (
         }
         const audio = document.getElementById(`audio-${userId}`);
         if (audio) audio.remove();
+        delete pendingCandidates.current[userId];
       });
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log("🎤 Microphone access granted");
         localStreamRef.current = stream;
 
         onVoiceUserJoined(socket, async ({ userId }) => {
@@ -121,7 +156,11 @@ export const useVoiceChat = (
           const peer = createPeer(userId, socket);
           peersRef.current[userId] = peer;
 
-          stream.getTracks().forEach((t) => peer.addTrack(t, stream));
+          stream.getTracks().forEach((t) => {
+            console.log("🎙️ Adding local track (caller):", t.kind);
+            peer.addTrack(t, stream);
+          });
+
           const offer = await peer.createOffer();
           await peer.setLocalDescription(offer);
           console.log("📤 Sending voice offer to", userId);
@@ -135,18 +174,14 @@ export const useVoiceChat = (
     getMediaAndSetup();
 
     return () => {
-      // Close all peer connections
       Object.values(peersRef.current).forEach((p) => p.close());
       peersRef.current = {};
 
-      // Stop local audio stream
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
 
-      // Remove audio elements
       document.querySelectorAll("audio[id^='audio-']").forEach((a) => a.remove());
 
-      // Clean up event listeners
       socket.off("voice-offer");
       socket.off("voice-answer");
       socket.off("voice-candidate");

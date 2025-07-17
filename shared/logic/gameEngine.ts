@@ -99,9 +99,11 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
         ...updatedPlayers[activePlayerIndex],
       };
 
+      const scoreEarned = targetPlayerIndex === activePlayerIndex ? 5 : 4 ; // +5 for risk or +4 for inflicting poison to opponent
+
       updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
         scoreInfo.playerId === activePlayer.id
-          ? { ...scoreInfo, score: scoreInfo.score + 2 }
+          ? { ...scoreInfo, score: scoreInfo.score + scoreEarned}
           : scoreInfo
       );
 
@@ -114,7 +116,7 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
 
        updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
         scoreInfo.playerId === activePlayer.id
-          ? { ...scoreInfo, score: scoreInfo.score + 2 }
+          ? { ...scoreInfo, score: scoreInfo.score + 5 } // +5 for taking risk and surviving
           : scoreInfo
       );
 
@@ -185,13 +187,7 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
       ...updatedPlayers[activePlayerIndex],
     }
 
-      const updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
-        scoreInfo.playerId === activePlayer.id
-          ? { ...scoreInfo, score: scoreInfo.score - 1 } // decrement score for using item
-          : scoreInfo
-      );
-
-    const updatedGame = Item({...game, scoreChart: updatedScoreChart, players: updatedPlayers }, itemType, action.targetPlayerId);
+    const updatedGame = Item({...game, players: updatedPlayers }, itemType, action.targetPlayerId);
 
     return updatedGame;
   }
@@ -207,7 +203,11 @@ export function nextRound(game: GameState, roundNumber: number): GameState {
 
     const updatedScoreChart = scoreChart.map((scoreInfo: Score) =>{
       const player = players.find((p: Contestant)=> p.id === scoreInfo.playerId);
-      const bonus = player ? 2 * player.lives : 0; // add twice points as life remaining
+        const bonus = player
+        ? player.lives > 0
+          ? player.lives * 5 // +5 for each remaining life
+          : -10              // -10 if eliminated first
+        : 0;                 // Fallback in case player is not found
       return {
         ... scoreInfo,
         score: scoreInfo.score + bonus

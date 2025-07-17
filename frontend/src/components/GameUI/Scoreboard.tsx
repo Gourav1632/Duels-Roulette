@@ -61,16 +61,16 @@ const Scoreboard = ({ scoreChart, onClose }: Props) => {
           </h3>
           <ul className=" space-y-1">
             <li> 
-              <span className="text-yellow-400 font-semibold">+2 </span> points for taking risk and drinking the goblet.
+              <span className="text-yellow-400 font-semibold">+5 </span> points for taking risk and drinking the goblet.
             </li>
             <li>
-              <span className="text-yellow-400 font-semibold">+2</span> points for inflicting poison on an opponent.
+              <span className="text-yellow-400 font-semibold">+4</span> points for inflicting poison on an opponent.
             </li>
             <li>
-              <span className="text-yellow-400 font-semibold">+2</span> points for each health point remaining after round is over.
+              <span className="text-yellow-400 font-semibold">+5</span> points for each remaining health point after surviving a round.
             </li>
             <li>
-              <span className="text-red-400 font-semibold">-1</span> points for using an artifact.
+              <span className="text-red-400 font-semibold">-10</span>  points for being the first player eliminated in a round.
             </li>
           </ul>
           <p className="text-center italic text-gray-400 mt-4">

@@ -98,8 +98,12 @@ const HowToPlay = () => {
             <section className="space-y-2">
               <h2 className="text-2xl font-bold text-yellow-300">Turn Actions</h2>
               <ul className="list-disc list-inside space-y-1 text-lg">
-                <li><strong>Drink:</strong> Brave the unknown and sip from a chalice.</li>
-                <li><strong>Offer:</strong> Politely pass the chalice to another… friend or foe.</li>
+                <li>
+                  <strong className="text-yellow-400">Drink:</strong> Dare to face fate and drink from the goblet. Survive, and you'll seize another turn. But if death claims you — your turn ends, and the next player steps forward.
+                </li>
+                <li>
+                  <strong className="text-yellow-400">Offer:</strong> Pass the goblet to another. No matter what's inside — your role is done, and the game moves to the next player.
+                </li>
               </ul>
               <p className="text-sm italic text-gray-400">
                 Use your instincts, items, and deceit to survive the king’s game.
@@ -109,18 +113,18 @@ const HowToPlay = () => {
             <section>
               <h2 className="text-2xl font-bold text-yellow-300 mb-2">Scoring System</h2>
               <ul className="list-disc list-inside space-y-2 text-lg text-gray-200">
-                <li>
-                  <span className="text-yellow-100 font-semibold">+2 point</span> — Taking risk and drinking goblet.
-                </li>
-                <li>
-                  <span className="text-yellow-100 font-semibold">+2 points</span> — Inflicting poison to an opponent.
-                </li>
-                <li>
-                  <span className="text-yellow-100 font-semibold">+2 point</span> — For each health remaining after surviving round.
-                </li>
-                <li>
-                  <span className="text-red-400 font-semibold">−1 point</span> — Using an artifact.
-                </li>
+            <li> 
+              <span className="text-yellow-400 font-semibold">+5 </span> points for taking risk and drinking the goblet.
+            </li>
+            <li>
+              <span className="text-yellow-400 font-semibold">+4</span> points for inflicting poison on an opponent.
+            </li>
+            <li>
+              <span className="text-yellow-400 font-semibold">+5</span> points for each remaining health point after surviving a round.
+            </li>
+            <li>
+              <span className="text-red-400 font-semibold">-10</span>  points for being the first player eliminated in a round.
+            </li>
               </ul>
               <p className="text-sm text-gray-400 italic mt-4 text-center">
                 Outsmart your opponents, manipulate fate, and claim the highest score to win the King’s favor.
@@ -130,6 +134,12 @@ const HowToPlay = () => {
 
             <section>
               <h2 className="text-2xl font-bold text-yellow-300 mb-2">Artifacts</h2>
+              <p className="text-lg text-gray-200">
+                Harness the power of artifacts wisely. In a single turn, you may unleash any number of them present in inventory — combine, stack, or sequence their effects to execute bold and strategic plays. The choice is yours.
+                <br />
+                  Once all goblets have been emptied and the round ends, you’ll be granted a fresh set of artifacts, ready to reshape the tides once again.
+
+              </p>
               <div className="grid md:grid-cols-2 gap-6">
                 {items.map((item) => (
                   <div

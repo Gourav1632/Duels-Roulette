@@ -26,6 +26,7 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
     shouldBlock: () =>  true,
     onConfirm: () => {
       leaveRoom(socket, room?.id ?? "", myPlayerId ?? "");
+      navigate('/')
     }
   });  
 
@@ -72,6 +73,12 @@ useEffect(() => {
   }
 
   onGameUpdate(socket,(gameState, action, delay) => {
+      if (gameState.gobletsRemaining === 0) {
+        setCanDrink(false);
+        setCanStealItem(false);
+        setActionMessage(null);
+      }
+
       if (gameState.gameState === 'game_over') {
         setCanDrink(false);
         setCanStealItem(false);
@@ -87,7 +94,7 @@ useEffect(() => {
         setGame(gameState);
         updateTurnState(gameState); // ✅ ensure proper turn state
       }, delay);
-    } else {
+    }  else {
       triggerEvent(action, delay, () => {
         setGame(gameState);
         updateTurnState(gameState); // ✅ ensure proper turn state
@@ -182,7 +189,7 @@ if (!room || !myPlayerId) {
         Please go back and join or create a new room to continue your journey.
       </p>
       <button
-        onClick={()=> navigate("/multiplayerlobby")}
+        onClick={()=> navigate("/")}
         className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 transition-colors rounded text-black font-bold text-lg"
       >
         Return Home
