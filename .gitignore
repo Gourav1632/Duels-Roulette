@@ -188,3 +188,4 @@ backend/bun.lockb
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+.vercel
