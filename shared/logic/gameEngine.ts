@@ -69,6 +69,7 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
     }
 
     const updatedPlayers = [...players];
+    let updatedScoreChart = [...scoreChart];
     const hasAmplified = activePlayer.statusEffects.includes('amplified');
 
     if (hasAmplified) {
@@ -98,31 +99,12 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
         ...updatedPlayers[activePlayerIndex],
       };
 
-      const updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
+      updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
         scoreInfo.playerId === activePlayer.id
           ? { ...scoreInfo, score: scoreInfo.score + 2 }
           : scoreInfo
       );
 
-    const updatedGame = {
-      ...game,
-      scoreChart: updatedScoreChart,
-      players: updatedPlayers,
-      currentGobletIndex: (currentGobletIndex + 1) % goblets.length,
-      gobletsRemaining: game.gobletsRemaining - 1,
-      activePlayerIndex: getNextPlayerIndex(activePlayerIndex, players.length, turnOrderDirection),
-    };
-
-    
-    return {
-      updatedGame,
-      actionMessage: {
-        type: 'drink',
-        userId: activePlayer.id,
-        targetId: targetPlayerId,
-        result: isPoisonous ? 'POISON' : 'HOLY',
-      }
-    };
 
     } else {
       if (targetPlayerIndex === activePlayerIndex) {
@@ -130,7 +112,7 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
           ...updatedPlayers[activePlayerIndex],
         };
 
-      const updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
+       updatedScoreChart = scoreChart.map((scoreInfo: Score) =>
         scoreInfo.playerId === activePlayer.id
           ? { ...scoreInfo, score: scoreInfo.score + 2 }
           : scoreInfo
@@ -154,6 +136,26 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
         };
       }
     }
+
+      const updatedGame = {
+    ...game,
+    scoreChart: updatedScoreChart,
+    players: updatedPlayers,
+    currentGobletIndex: (currentGobletIndex + 1) % goblets.length,
+    gobletsRemaining: game.gobletsRemaining - 1,
+    activePlayerIndex: getNextPlayerIndex(activePlayerIndex, players.length, turnOrderDirection),
+  };
+
+
+    return {
+      updatedGame,
+      actionMessage: {
+        type: 'drink',
+        userId: activePlayer.id,
+        targetId: targetPlayerId,
+        result: isPoisonous ? 'POISON' : 'HOLY',
+      }
+    };
 
 
   } else if (action.type === 'use_item' && action.itemType) {

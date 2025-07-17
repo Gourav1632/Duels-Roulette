@@ -11,7 +11,6 @@ type Action =
   | { type: 'use_item'; itemType: ItemType; targetPlayerId?: string }
   | { type: 'drink'; targetPlayerId?: string };
 
-  
 function calculateActionScore(
   game: GameState,
   action: Action,
@@ -19,10 +18,10 @@ function calculateActionScore(
   opponent: Contestant | undefined,
   pPoisonous: number
 ): number {
-  let score = 0;
 
-  // Uncertainty is highest when pPoisonous ≈ 0.5
-  const uncertainty = 1 - Math.abs(0.5 - pPoisonous) * 2;
+
+  let score = 0;
+  score += 1;
 
   switch (action.type) {
     case 'use_item':
@@ -34,40 +33,31 @@ function calculateActionScore(
           break;
 
         case 'crown_disavowal':
-          if (pPoisonous >= 0.4 && pPoisonous <= 0.6) {
-            score += aiPlayer.lives <= 1 ? 900 : 400;
-          } else {
-            score += 50;
-          }
+          if (pPoisonous >= 0.4 && pPoisonous <= 0.6 && aiPlayer.lives <= 1) score += 900;
+          else if (pPoisonous >= 0.4 && pPoisonous <= 0.6) score += 400;
+          else score += 50;
           break;
 
         case 'verdict_amplifier':
-          if (opponent) {
-            const weight = 3 - opponent.lives; // More valuable if opponent is weak
-            score += pPoisonous * 400 * weight;
-          }
+          if (pPoisonous > 0.7 && opponent && opponent.lives >= 2) score += 1000;
+          else if (opponent) score += 300;
           break;
 
         case 'royal_chain_order':
           const alreadyChained = opponent?.statusEffects.includes('thief');
-          if (opponent && opponent.lives > 0 && !alreadyChained) {
-            if (pPoisonous > 0.5) score += 1000;
-            else score += 300;
-          } else {
-            score -= 300; // Penalty for waste
+          if (pPoisonous > 0.5 && opponent && opponent.lives > 0 && !alreadyChained) {
+            score += 1000;
           }
           break;
 
         case 'royal_scrutiny_glass':
-          if (pPoisonous === 0 || pPoisonous === 1) {
-            score -= 200; // No new info
-          } else {
-            score += 400 * uncertainty;
-          }
+          if (pPoisonous >= 0.4 && pPoisonous <= 0.6 ) score += 600;
+          else score += 10;
           break;
 
         case 'chronicle_ledger':
-          score += 400 * uncertainty;
+          if (pPoisonous >= 0.4 && pPoisonous <= 0.6 ) score += 600
+          else score += 50;
           break;
 
         case 'paradox_dial':
@@ -82,11 +72,7 @@ function calculateActionScore(
             let maxStolenScore = 0;
             for (const stolenItem of opponent.items) {
               if (stolenItem === 'thiefs_tooth') continue;
-              const hypotheticalAction: Action = {
-                type: 'use_item',
-                itemType: stolenItem,
-                targetPlayerId: opponent.id
-              };
+              const hypotheticalAction: Action = { type: 'use_item', itemType: stolenItem, targetPlayerId: opponent.id };
               const itemScore = calculateActionScore(game, hypotheticalAction, aiPlayer, opponent, pPoisonous);
               maxStolenScore = Math.max(maxStolenScore, itemScore);
             }
@@ -97,7 +83,7 @@ function calculateActionScore(
           break;
 
         default:
-          score += 10; // Generic fallback for unhandled items
+          score += 10;
           break;
       }
       break;
@@ -116,10 +102,8 @@ function calculateActionScore(
       }
       break;
   }
-
   return score;
 }
-
 
 export function automatonTakeTurn(game: GameState): { updatedGame: GameState, actionMessage: ActionMessage } {
 
