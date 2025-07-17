@@ -1,10 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import {
-  voiceJoin,
   sendVoiceAnswer,
   sendVoiceCandidate,
-  leaveVoiceRoom,
   onVoiceOffer,
   onVoiceAnswer,
   onVoiceCandidate,
@@ -54,7 +52,6 @@ export const useVoiceChat = (
       document.body.appendChild(audio);
     };
 
-    // Add diagnostic logs for connection state
     peer.oniceconnectionstatechange = () => {
       if (peer.iceConnectionState === "failed") {
         console.warn(`❌ ICE connection failed with ${userId}`);
@@ -68,79 +65,88 @@ export const useVoiceChat = (
     if (!enabled || !roomId) return;
 
     const getMediaAndSetup = async () => {
+      // ✅ Set up listeners BEFORE getUserMedia
+      onVoiceOffer(socket, async ({ from, offer }) => {
+        console.log("📥 Received voice offer from", from);
+        let peer = peersRef.current[from];
+        if (!peer) {
+          peer = createPeer(from, socket);
+          peersRef.current[from] = peer;
+          localStreamRef.current?.getTracks().forEach((t) =>
+            peer!.addTrack(t, localStreamRef.current!)
+          );
+        }
+
+        await peer.setRemoteDescription(offer);
+        const answer = await peer.createAnswer();
+        await peer.setLocalDescription(answer);
+        console.log("📤 Sending voice answer to", from);
+        sendVoiceAnswer(socket, from, answer);
+      });
+
+      onVoiceAnswer(socket, async ({ from, answer }) => {
+        console.log("✅ Received voice answer from", from);
+        const peer = peersRef.current[from];
+        if (peer) {
+          await peer.setRemoteDescription(answer);
+        }
+      });
+
+      onVoiceCandidate(socket, ({ from, candidate }) => {
+        console.log("➕ Received ICE candidate from", from);
+        const peer = peersRef.current[from];
+        if (peer && candidate) {
+          peer.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+      });
+
+      onVoiceLeave(socket, (userId) => {
+        console.log("👋 Received leave-voice for", userId);
+        const peer = peersRef.current[userId];
+        if (peer) {
+          peer.close();
+          delete peersRef.current[userId];
+        }
+        const audio = document.getElementById(`audio-${userId}`);
+        if (audio) audio.remove();
+      });
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localStreamRef.current = stream;
 
-        voiceJoin(socket, roomId);
-
-        onVoiceOffer(socket, async ({ from, offer }) => {
-          let peer = peersRef.current[from];
-          if (!peer) {
-            peer = createPeer(from, socket);
-            peersRef.current[from] = peer;
-            stream.getTracks().forEach((t) => peer!.addTrack(t, stream));
-          }
-
-          await peer.setRemoteDescription(offer);
-          const answer = await peer.createAnswer();
-          await peer.setLocalDescription(answer);
-          sendVoiceAnswer(socket, from, answer);
-        });
-
-        onVoiceAnswer(socket, async ({ from, answer }) => {
-          const peer = peersRef.current[from];
-          if (peer) {
-            await peer.setRemoteDescription(answer);
-          }
-        });
-
-        onVoiceCandidate(socket, ({ from, candidate }) => {
-          const peer = peersRef.current[from];
-          if (peer && candidate) {
-            peer.addIceCandidate(new RTCIceCandidate(candidate));
-          }
-        });
-
         onVoiceUserJoined(socket, async ({ userId }) => {
           if (peersRef.current[userId]) return;
-
+          console.log("👤 Voice user joined", userId);
           const peer = createPeer(userId, socket);
           peersRef.current[userId] = peer;
 
           stream.getTracks().forEach((t) => peer.addTrack(t, stream));
           const offer = await peer.createOffer();
           await peer.setLocalDescription(offer);
+          console.log("📤 Sending voice offer to", userId);
           sendVoiceOffer(socket, userId, offer);
         });
-
-        onVoiceLeave(socket, (userId) => {
-          const peer = peersRef.current[userId];
-          if (peer) {
-            peer.close();
-            delete peersRef.current[userId];
-          }
-          const audio = document.getElementById(`audio-${userId}`);
-          if (audio) audio.remove();
-        });
       } catch (err) {
-        console.error("Microphone access error:", err);
+        console.error("🚫 Microphone access error:", err);
       }
     };
 
     getMediaAndSetup();
 
     return () => {
+      // Close all peer connections
       Object.values(peersRef.current).forEach((p) => p.close());
       peersRef.current = {};
 
+      // Stop local audio stream
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
 
-      leaveVoiceRoom(socket, roomId);
-
+      // Remove audio elements
       document.querySelectorAll("audio[id^='audio-']").forEach((a) => a.remove());
 
+      // Clean up event listeners
       socket.off("voice-offer");
       socket.off("voice-answer");
       socket.off("voice-candidate");

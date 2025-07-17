@@ -3,7 +3,6 @@ import { roomManager } from "./rooms/roomManager";
 import { playTurn, initializeGame, startRound } from "../../shared/logic/gameEngine";
 import { ActionMessage, Contestant, Player, StatusEffect } from "../../shared/types/types";
 import { handlePlayerTurn } from "./rooms/turnManager";
-import { emit } from "process";
 
 export function registerSocketHandlers(io: Server) {
   io.on("connection", (socket) => {
@@ -38,6 +37,12 @@ export function registerSocketHandlers(io: Server) {
         }
         roomManager.joinRoom(roomId, newPlayer, password);
         socket.join(roomId);
+
+        const isVoiceChatEnabled = roomManager.getRoom(roomId)?.voiceChatEnabled;
+        if(isVoiceChatEnabled) {
+          socket.to(roomId).emit("voice-user-joined", { userId: socket.id });
+        }
+
         io.to(roomId).emit("room_update", roomManager.getRoom(roomId));
     } catch (error: any) {
         console.error("Join room error:", error.message);
@@ -48,8 +53,13 @@ export function registerSocketHandlers(io: Server) {
     socket.on("leave_room", ({ roomId, playerId }) => {
     const roomData = roomManager.getRoom(roomId);
     const leavingPlayer = roomData?.players.find(p => p.id === playerId)?.name ?? "A player";
+
     const newRoomData = roomManager.leaveRoom(roomId, playerId);
+    
+    if (roomData?.voiceChatEnabled) socket.to(roomId).emit("leave-voice", socket.id);
     socket.leave(roomId);
+    
+
     io.to(roomId).emit("room_update", newRoomData ?? null);
     if (newRoomData?.gameState) {
     if( newRoomData.gameState.players.length === 1) { 
@@ -80,7 +90,6 @@ export function registerSocketHandlers(io: Server) {
 
 
     socket.on("start_game", ({roomId})=>{
-        console.log("Starting game...");
         const room = roomManager.getRoom(roomId);
         if(!room){
           console.log("no room");
@@ -206,16 +215,6 @@ export function registerSocketHandlers(io: Server) {
     
 
     // Voice Chat Signaling
-          
-      socket.on("voice-join", async ({ roomId }) => {
-        console.log(`Socket ${socket.id} joining voice room ${roomId}`);
-        socket.join(roomId); // Join the room for WebRTC signaling
-
-        // Notify other users in the room that this user has joined
-        socket.to(roomId).emit("voice-user-joined", { userId: socket.id });
-
-      });
-
 
       socket.on("voice-offer", ({ to, offer }) => {
         console.log(`🎤 Sending voice offer to ${to}`);
@@ -223,15 +222,12 @@ export function registerSocketHandlers(io: Server) {
       });
 
       socket.on("voice-answer", ({ to, answer }) => {
+        console.log(`Sending voice answer to ${to}`)
         io.to(to).emit("voice-answer", { from: socket.id, answer });
       });
 
       socket.on("voice-candidate", ({ to, candidate }) => {
         io.to(to).emit("voice-candidate", { from: socket.id, candidate });
-      });
-
-      socket.on("leave-voice", (roomId: string) => {
-          socket.to(roomId).emit("leave-voice", socket.id);
       });
 
 
@@ -241,6 +237,7 @@ export function registerSocketHandlers(io: Server) {
       console.log(`⚡ Client disconnected: ${socket.id}`);
       const rooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
       for (const roomId of rooms) {
+        socket.to(roomId).emit('leave-voice', socket.id)
         roomManager.leaveRoom(roomId, socket.id);
         io.to(roomId).emit("room_update", roomManager.getRoom(roomId));
       }

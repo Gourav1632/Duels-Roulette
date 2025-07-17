@@ -64,7 +64,6 @@ leaveRoom(roomId: string, playerId: string): RoomData | undefined {
   // Remove room if empty
   if (room.players.length === 0) {
     this.rooms.delete(roomId);
-    console.log("room empty");
     return;
   }
 

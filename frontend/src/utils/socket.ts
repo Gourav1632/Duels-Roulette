@@ -55,10 +55,6 @@ export const gameReady = (socket: Socket, roomId: string) => {
 
 // voice chat related emitters
 
-export const voiceJoin = (socket: Socket, roomId: string) => {
-  socket.emit("voice-join", { roomId });
-};
-
 export const sendVoiceAnswer = (
   socket: Socket,
   to: string,
@@ -81,10 +77,6 @@ export const sendVoiceCandidate = (
   candidate: RTCIceCandidate
 ) => {
   socket.emit("voice-candidate", { to, candidate });
-};
-
-export const leaveVoiceRoom = (socket: Socket, roomId: string) => {
-  socket.emit("leave-voice", roomId);
 };
 
 

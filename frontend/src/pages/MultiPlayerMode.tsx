@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import EventArea from '../components/GameUI/EventArea';
 import PlayingArea from '../components/GameUI/PlayingArea';
 import type { ActionMessage, ItemType, GameState, RoomData } from "../../../shared/types/types";
-import { emitPlayerAction, gameReady, leaveRoom, leaveVoiceRoom, onGameUpdate } from "../utils/socket";
+import { emitPlayerAction, gameReady, leaveRoom, onGameUpdate } from "../utils/socket";
 import { useSocket } from "../context/SocketContext";
 import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
 import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
@@ -25,7 +25,6 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
     {
     shouldBlock: () =>  true,
     onConfirm: () => {
-      leaveVoiceRoom(socket, room?.id ?? "");
       leaveRoom(socket, room?.id ?? "", myPlayerId ?? "");
     }
   });  
@@ -41,9 +40,6 @@ useEffect(() => {
   const handleUnload = () => {
     // This only runs if user actually confirms (reloads or closes tab)
     if (room && myPlayerId) {
-      if (room.voiceChatEnabled) {
-        leaveVoiceRoom(socket, room.id);
-      }
       leaveRoom(socket, room.id, myPlayerId);
     }
   };

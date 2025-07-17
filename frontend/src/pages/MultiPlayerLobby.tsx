@@ -11,7 +11,6 @@ import {
   leaveRoom,
   startGame,
   onGameStarted,
-  leaveVoiceRoom,
 } from "../utils/socket";
 import { v4 as uuidv4 } from "uuid";
 import type { PublicRoomData, RoomData } from "../../../shared/types/types";
@@ -49,9 +48,6 @@ const MultiplayerLobby = ({
     shouldBlock: () => mode === "create" && shouldBlockRef.current,
     onConfirm: () => {
       if (room && playerId) {
-        if (voiceChatEnabled) {
-          leaveVoiceRoom(socket, room.id);
-        }
         leaveRoom(socket, room.id, playerId);
         setRoom(null);
         setMyPlayerId(null);
@@ -62,9 +58,6 @@ const MultiplayerLobby = ({
     useEffect(() => {
       const handleBeforeUnload = (e: BeforeUnloadEvent) => {
         if (room && playerId && shouldBlockRef.current) {
-          if (voiceChatEnabled) {
-            leaveVoiceRoom(socket, room.id);
-          }
           leaveRoom(socket, room.id, playerId);
           setRoom(null);
           setMyPlayerId(null);
@@ -83,6 +76,7 @@ const MultiplayerLobby = ({
     if (!socket.connected) socket.connect();
 
     onRoomCreate(socket, (roomData) => {
+      setVoiceChatEnabled(roomData.voiceChatEnabled)
       setRoom(roomData);
       setRoomData(roomData);
       setMode("create");
