@@ -1,4 +1,4 @@
-
+import { useNavigate } from "react-router-dom";
 const items = [
   {
     name: "Royal Scrutiny Glass",
@@ -51,6 +51,7 @@ const items = [
 ];
 
 const HowToPlay = () => {
+  const navigate = useNavigate();
   return (
     <div className="relative w-full min-h-screen flex items-center overflow-hidden">
       {/* Fixed Background Image */}
@@ -156,6 +157,15 @@ const HowToPlay = () => {
                   </div>
                 ))}
               </div>
+            </section>
+
+            <section className="flex justify-center mt-6">
+              <button
+                onClick={()=> navigate('/tutorial')} 
+                className="bg-yellow-500 hover:bg-yellow-600 text-black font-cinzel font-semibold px-6 py-2 rounded shadow-lg transition duration-200"
+              >
+                Play Tutorial
+              </button>
             </section>
 
             <section className="text-center text-md italic text-gray-400 mt-8">

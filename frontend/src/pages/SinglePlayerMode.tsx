@@ -13,6 +13,8 @@ import {
 
 import type { ActionMessage, ItemType, Contestant, GameState } from "../../../shared/types/types";
 import { automatonTakeTurn } from "../../../shared/logic/aiLogic";
+import TutorialPrompt from "../components/GameUI/TutorialPrompt";
+import { useNavigate } from "react-router-dom";
 
 
 function SinglePlayerMode() {
@@ -22,6 +24,30 @@ function SinglePlayerMode() {
   const [canStealItem, setCanStealItem] = useState<boolean>(false);
   const [canDrink, setCanDrink] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showTutorialPrompt, setShowTutorialPrompt] = useState<boolean>(false);
+  const [hasMadeTutorialChoice, setHasMadeTutorialChoice] = useState<boolean>(false);
+  const navigate = useNavigate();
+
+  useEffect(()=>{
+    if(!localStorage.getItem("hasSeenTutorial")) {
+      setShowTutorialPrompt(true);
+    } else {
+      setHasMadeTutorialChoice(true);
+    }
+  },[])
+
+  const handleCancelTutorial = () => {
+    localStorage.setItem("hasSeenTutorial", "true");
+    setHasMadeTutorialChoice(true);
+    setShowTutorialPrompt(false);
+  }
+
+  const handleStartTutorial = () => {
+    localStorage.setItem("hasSeenTutorial", "true");
+    setHasMadeTutorialChoice(true);
+    setShowTutorialPrompt(false);
+    navigate('/tutorial')
+  }
 
 
   useEffect(()=>{
@@ -83,6 +109,7 @@ function SinglePlayerMode() {
   }
 
   useEffect(() => {
+    if (!hasMadeTutorialChoice) return;
     setLoading(true);
     const humanPlayer: Contestant = {
       id: "human",
@@ -120,7 +147,7 @@ function SinglePlayerMode() {
         setLoading(false);
         setGame(started);
       }, 10000);
-  }, []);
+  }, [hasMadeTutorialChoice]);
 
 
   function handlePlayerTurn(game:GameState){
@@ -323,6 +350,16 @@ if (loading) return (
 
   return (
     <div className="flex w-full h-screen bg-black text-white">
+
+
+    {showTutorialPrompt && (
+      <div
+        className="fixed inset-0 z-10 flex items-center justify-center bg-cover bg-center"
+        style={{ backgroundImage: "url('/game_ui/intro.webp')" }}
+      >
+        <TutorialPrompt onCancel={handleCancelTutorial} onStart={handleStartTutorial} />
+      </div>
+    )}
 
       {/* Mobile view  */}
       {/* Left Panel - Game Scene */}

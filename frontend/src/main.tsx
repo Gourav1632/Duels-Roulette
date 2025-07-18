@@ -21,6 +21,7 @@ import {
 import MultiplayerWrapper from "./wrappers/MultiplayerWrapper";
 
 import "./index.css";
+import Tutorial from "./pages/Tutorial";
 
 const router = createBrowserRouter([
   {
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
           { path: "multiplayer", element: <MultiPlayerModeWrapper /> },
         ],
       },
+      { path: "tutorial" , element: <Tutorial />},
       { path: "how-to-play", element: <HowToPlay /> },
       { path: "lore", element: <Lore /> },
       { path: "credits", element: <Credits /> },
