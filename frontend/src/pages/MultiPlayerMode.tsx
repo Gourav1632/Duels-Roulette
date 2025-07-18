@@ -93,6 +93,7 @@ useEffect(() => {
         return;
       }
     if (action.type === "announce" && action.result) {
+
       setLoading(true);
       setGameMessage(action.result);
       setTimeout(() => {

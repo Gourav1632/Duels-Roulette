@@ -26,6 +26,7 @@ function SinglePlayerMode() {
   const [loading, setLoading] = useState<boolean>(false);
   const [showTutorialPrompt, setShowTutorialPrompt] = useState<boolean>(false);
   const [hasMadeTutorialChoice, setHasMadeTutorialChoice] = useState<boolean>(false);
+  const [countdown, setCountdown] = useState(9);
   const navigate = useNavigate();
 
   useEffect(()=>{
@@ -143,6 +144,17 @@ function SinglePlayerMode() {
       result: `Round ${started.currentRound.round} starts with ${poisnousGoblets} poisoned and ${holyGoblets} holy goblets.`
     };
     setGameMessage(roundStartMessage.result ?? "");
+
+
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
       setTimeout(() => {
         setLoading(false);
@@ -353,6 +365,8 @@ if (loading) return (
       <p className="italic">
         Choose wisely... <span className="text-red-700">I’d hate to see you die too soon.</span>
       </p>
+      {/* Countdown */}
+        <p className="text-2xl text-red-700 font-bold mb-4">The Game begins in... {countdown}</p>
     </div>
   </div>
 );
