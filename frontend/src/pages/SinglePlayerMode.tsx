@@ -109,6 +109,7 @@ function SinglePlayerMode() {
   }
 
   useEffect(() => {
+
     if (!hasMadeTutorialChoice) return;
     setLoading(true);
     const humanPlayer: Contestant = {
@@ -288,17 +289,27 @@ const handleDrink = (targetId: string) => {
 
   const handleStealItem = (item: ItemType, targetId: string) => {
     if (!game) return;
-
+    setCanStealItem(false);
     const { updatedGame, actionMessage } = playTurn(game, {
       type: "use_item",
       itemType: item,
       targetPlayerId: targetId
     });
 
-    setCanStealItem(false);
+    // again check thief status of updated game
+    const isThief = updatedGame.players[game.activePlayerIndex].statusEffects.includes('thief');
+    
     triggerEvent(actionMessage,5000,()=>{
+      // edge case: check if user has again got thief status for stealing thief's tooth from opponent
+      if (isThief){
+        setCanStealItem(true);
+        setCanDrink(false);
+      } 
+      else {
+        setCanStealItem(false);
+        setCanDrink(true);
+      } 
       setGame(updatedGame);
-      setCanDrink(true);
     });
   };
 

@@ -1,4 +1,4 @@
-import type { RoundConfig, GameState, Contestant, ItemType, ActionMessage, Score } from '../types/types';
+import type { RoundConfig, GameState, Contestant, ItemType, ActionMessage, Score, StatusEffect } from '../types/types';
 import { Item } from './itemSystem';
 import { clearGobletMemory, gobletCountMemory } from './aiLogic';
 
@@ -58,12 +58,13 @@ export function startRound(game: GameState, roundNumber: number): GameState {
 
 // Play a turn
 export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' | string; targetPlayerId?: string; itemType?: ItemType }): { updatedGame: GameState, actionMessage: ActionMessage } {
+  const gameCopy = JSON.parse(JSON.stringify(game));
   const { activePlayerIndex, players, goblets, currentGobletIndex, turnOrderDirection, scoreChart } = game;
   const activePlayer = players[activePlayerIndex];
 
   if (action.type === 'drink') {
     const targetPlayerId = action.targetPlayerId;
-    const targetPlayerIndex = players.findIndex(p => p.id === targetPlayerId);
+    const targetPlayerIndex = players.findIndex( (p: Contestant) => p.id === targetPlayerId);
     if (targetPlayerIndex === -1) {
       return { updatedGame: game, actionMessage: { type: 'drink', userId: activePlayer.id, result: 'Target player not found.' } };
     }
@@ -75,7 +76,7 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
     if (hasAmplified) {
       updatedPlayers[activePlayerIndex] = {
         ...activePlayer,
-        statusEffects: activePlayer.statusEffects.filter(e => e !== 'amplified'),
+        statusEffects: activePlayer.statusEffects.filter((e: StatusEffect) => e !== 'amplified'),
       };
     }
 
@@ -162,11 +163,13 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
 
   } else if (action.type === 'use_item' && action.itemType) {
     const itemType = action.itemType;
-    // if status is thief
+    const activePlayer = gameCopy.players[activePlayerIndex];
+    const targetPlayerIndex = gameCopy.players.findIndex((p: Contestant)=> p.id == action.targetPlayerId);
+    const targetPlayer = gameCopy.players[targetPlayerIndex];
 
+    // if status is thief
     const isThief = activePlayer.statusEffects.includes("thief");
     if(isThief) {
-      const targetPlayer = game.players.find((p)=> p.id == action.targetPlayerId);
       if(targetPlayer) {
         const itemIndex = targetPlayer.items.indexOf(action.itemType);
     
@@ -175,7 +178,7 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
         activePlayer.items.push(action.itemType);
     
         // Remove "thief" status effect
-        activePlayer.statusEffects = activePlayer.statusEffects.filter(effect => effect !== "thief");
+        activePlayer.statusEffects = activePlayer.statusEffects.filter((effect : StatusEffect) => effect !== "thief");
       }
     }
 
@@ -183,9 +186,9 @@ export function playTurn(game: GameState, action: { type: 'drink' | 'use_item' |
       return { updatedGame: game, actionMessage: { type: 'artifact_used', userId: activePlayer.id, result: `Item ${itemType} not found.` } };
 
     const updatedPlayers = [...players];
-    updatedPlayers[activePlayerIndex] = {
-      ...updatedPlayers[activePlayerIndex],
-    }
+    updatedPlayers[activePlayerIndex] = activePlayer;
+    updatedPlayers[targetPlayerIndex] = targetPlayer;
+
 
     const updatedGame = Item({...game, players: updatedPlayers }, itemType, action.targetPlayerId);
 
@@ -268,12 +271,12 @@ function shuffleArray<T>(array: T[]): void {
 
 function getRandomItems(count: number): ItemType[] {
   const allItems: ItemType[] = [
-    'royal_scrutiny_glass',
-    'verdict_amplifier',
-    'crown_disavowal',
-    'royal_chain_order',
-    'sovereign_potion',
-    'chronicle_ledger',
+    // 'royal_scrutiny_glass',
+    // 'verdict_amplifier',
+    // 'crown_disavowal',
+    // 'royal_chain_order',
+    // 'sovereign_potion',
+    // 'chronicle_ledger',
     'paradox_dial',
     'thiefs_tooth',
   ];

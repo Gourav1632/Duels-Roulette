@@ -66,8 +66,14 @@ useEffect(() => {
     if (!isMyTurn) {
       setCanDrink(false);
     } else {
-      if (isThief) setCanStealItem(true);
-      else setCanDrink(true);
+      if (isThief){
+        setCanDrink(false);
+        setCanStealItem(true);
+      } 
+      else {
+        setCanDrink(true);
+        setCanStealItem(false);
+      } 
     }
     setShowEventArea(false);
   }
@@ -126,7 +132,9 @@ useEffect(() => {
 
   const handleDrink = (targetId: string) => {
     if (!room || !room.gameState) return;
-
+    // immediately setting the can drink and can steal to false to prevent spamming, without wait for server game update
+    setCanDrink(false);
+    setCanStealItem(false);
     const actionMessage = {
       type: "drink",
       targetPlayerId: targetId
@@ -138,7 +146,9 @@ useEffect(() => {
 
   const handleUseItem = (item: ItemType, targetId: string) => {
     if (!room || !room.gameState) return;
-
+    // immediately setting the can drink and can steal to false to prevent spamming, without wait for server game update
+    setCanDrink(false);
+    setCanStealItem(false);
     const actionMessage  = {
       type: "use_item",
       itemType: item,
@@ -150,7 +160,8 @@ useEffect(() => {
 
   const handleStealItem = (item: ItemType, targetId: string) => {
     if (!room || !room.gameState) return;
-
+    setCanStealItem(false);
+    setCanDrink(false);
     const  actionMessage  = {
       type: "use_item",
       itemType: item,

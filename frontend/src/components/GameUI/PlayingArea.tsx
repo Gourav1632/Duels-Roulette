@@ -252,7 +252,7 @@ const PlayerImage = ({
               src={`/items/${item}.png`}
               alt={item}
               className={`w-8 h-8 object-contain border border-yellow-600 bg-zinc-800 ${
-                canStealItem ? 'shadow-[0_0_8px_#cf8a09] cursor-pointer' : ''
+                canStealItem ? 'shadow-[0_0_8px_#cf8a09] cursor-pointer' : 'grayscale opacity-60 cursor-not-allowed'
               }`}
               onClick={(e) => {
                 e.stopPropagation();
