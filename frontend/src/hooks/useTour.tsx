@@ -1,6 +1,6 @@
 import Shepherd from 'shepherd.js';
 // import 'shepherd.js/dist/css/shepherd.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Tour } from 'shepherd.js';
 import { steps } from '../data/tutorial';
 
@@ -45,6 +45,14 @@ export function useTour({
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [tourInstance, setTourInstance] = useState<Tour | null>(null);
+
+    useEffect(() => {
+    // Cleanup on unmount
+    return () => {
+      tourInstance?.cancel();
+      document.body.style.overflow = 'auto';
+    };
+  }, [tourInstance]);
 
   const startTour = () => {
     document.body.style.overflow = 'hidden'; 
