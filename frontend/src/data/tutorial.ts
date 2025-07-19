@@ -53,17 +53,17 @@ export const tutorialGameState: GameState = {
 export const steps: Step[] = [
     {
       id: 'welcome',
-      message: `So, you think you're ready for Chalice of the King? Good. Let's see if you can outsmart fate... or at least survive long enough to annoy your friends. Pay attention.`,
+      message: `So, you're ready for CHALICE OF THE KING? Good. Let's see if you can outsmart fate, or at least survive long enough to annoy your friends. Try to pay attention, this isn't rocket science... mostly.`,
 
     },
     {
       id: 'introduce',
-      message: `Oh, and I'm Gourav, the one behind all this.`,
+      message: `Just so you know, I'm Gourav. The one who cooked up this delightful mess.`,
 
     },
     {
       id: 'start',
-      message: `So, you've met me. Now, prepare to meet your doom... or, you know, your playing area. Pretty important stuff.`,
+      message: `Now that you've met the architect of your potential downfall, let's get to the main stage: your PLAYING AREA. Every single choice you make here matters.`,
 
     },
     {
@@ -76,11 +76,7 @@ export const steps: Step[] = [
     },
     {
         id:'mobile-event-area-intro',
-        message: `Speaking of events, here's a quick peek at what that 'event area' looks like. It's where all the dramatic reveals, the poisonings, and the occasional miracles play out.`
-    },
-    {
-        id:'mobile-event-area',
-        message: `Got a look? Good. (Desktop users, yes, I know you've been staring at it this whole time. No need to brag.) Anyway, let's move forward.`
+        message: `Speaking of events, here's a quick peek at what that 'event area' looks like. (And yes, I actually bothered to make this responsive, so even you mobile users can eventually see it. The sacrifices I make.) It's where all the dramatic reveals, the poisonings, and the occasional miracles play out.`
     },
     {
         id: 'player-info',
@@ -102,19 +98,23 @@ export const steps: Step[] = [
     },
     {
     id: 'artifact-combo-example',
-    message: `Oh, and one more thing about those artifacts: you can use multiple of them in a single turn to create some truly wicked combos. My personal favorite? Using a **Royal Scrutiny Glass** to peek at the goblet, then flipping it from holy to poisonous with a **Paradox Dial**, amplifying its effect with a **Verdict Amplifier**, and finally... offering it to an "unlucky" opponent. After all, I'm the one who made this.`,
+    message: `Oh, and one more thing about those artifacts: you can use multiple of them in a single turn to create some truly wicked combos.`,
     target: '#player-inventory',
     position: 'top'
 },
+{
+  id: 'personal-favorite',
+  message: `My personal favorite combo? Using a **Royal Scrutiny Glass** to peek at the goblet, then flipping it from holy to poisonous with a **Paradox Dial**, amplifying its effect with a **Verdict Amplifier**, and finally... offering it to an "unlucky" opponent. After all, I'm the one who made this.`,
+},
     {
         id: 'item-help',
-        message: `And just in case your memory isn't quite royal-grade, there's a little cheat sheet for what all those artifacts do. Just look right over here.`,
+        message: `And just in case your memory isn't quite royal-grade, there's a little cheat sheet for what all those artifacts do. Just look right over here. (?)`,
         target: '#item-help',
         position: 'left'
     },
     {
         id: 'music-player',
-        message: `Oh, and beneath that inventory help, you'll find the music player button. Because even deadly games of deception need a killer soundtrack. Feel free to set the mood... or distract your opponents`,
+        message: `Oh, and beneath that inventory help, you'll find the music player button (🎶). Because even deadly games of deception need a killer soundtrack. Feel free to set the mood... or distract your opponents.`,
         target: '#music-player',
         position: 'left',
     },
@@ -146,7 +146,7 @@ export const steps: Step[] = [
 },
 {
     id: 'scoring-system-info',
-    message: `Now, if you're keen to master the art of scoring (which, let's be honest, you should be), you can always find the full breakdown in the 'How to Play' section. Or, you know, just click on the scoreboard itself. I'm not going to sit here and read you my own rulebook, you can check that out yourself. Go on, give it a look.`
+    message: `Now, if you're keen to master the art of scoring (which, let's be honest, you should be), you can always find the full breakdown in the 'How to Play' section. Or, you know, just click on the scoreboard itself. I'm not going to sit here and read you my own rulebook, you can check that out yourself.`
 },
 {
     id: 'how-to-play-plea',
@@ -154,7 +154,7 @@ export const steps: Step[] = [
 },
 {
     id: 'final-roast',
-    message: `And that, my friend, is your crash course in **Chalice of the King**. You're now equipped with enough knowledge to be dangerous... mostly to yourself. Go forth, try not to drink from too many questionable goblets, and for the King's sake, **don't be the first one eliminated**. I've put too much work into this for you to embarrass me. Good luck. You'll need it. Now, go play!`
+    message: `That's it. Your CHALICE OF THE KING tutorial, complete. You're now dangerous... mainly to yourself. Go play. And for the love of all that is holy, **don't be the first one eliminated**. My reputation is on the line here, not yours. Good luck. Seriously.`
 }
 
   ];

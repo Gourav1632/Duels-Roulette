@@ -271,12 +271,12 @@ function shuffleArray<T>(array: T[]): void {
 
 function getRandomItems(count: number): ItemType[] {
   const allItems: ItemType[] = [
-    // 'royal_scrutiny_glass',
-    // 'verdict_amplifier',
-    // 'crown_disavowal',
-    // 'royal_chain_order',
-    // 'sovereign_potion',
-    // 'chronicle_ledger',
+    'royal_scrutiny_glass',
+    'verdict_amplifier',
+    'crown_disavowal',
+    'royal_chain_order',
+    'sovereign_potion',
+    'chronicle_ledger',
     'paradox_dial',
     'thiefs_tooth',
   ];
@@ -301,8 +301,8 @@ export function generateRoundConfig(round: number): RoundConfig {
   if (round === 1) {
     poisnousGoblets = 1 + Math.floor(Math.random() * 2);
     holyGoblets = 1 + Math.floor(Math.random() * 2);
-    lives = 2;
-    itemCount = 0;
+    lives = 3;
+    itemCount = 1;
   } else if (round === 2) {
     poisnousGoblets = 2 + Math.floor(Math.random() * 2);
     holyGoblets = 2 + Math.floor(Math.random() * 2);

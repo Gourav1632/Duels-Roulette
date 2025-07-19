@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useSound } from "../hooks/sound";
 const items = [
   {
     name: "Royal Scrutiny Glass",
@@ -51,6 +52,7 @@ const items = [
 ];
 
 const HowToPlay = () => {
+  const playSelectSound = useSound("/sounds/select.wav");
   const navigate = useNavigate();
   return (
     <div className="relative w-full min-h-screen flex items-center overflow-hidden">
@@ -76,6 +78,19 @@ const HowToPlay = () => {
 
           {/* Main Box */}
           <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 space-y-6 font-medievalsharp max-h-[90vh] overflow-y-auto custom-scrollbar">
+
+            {/* Close Button */}
+            <button
+              onClick={()=> {
+                playSelectSound();
+                navigate("/")
+              }}
+              className="absolute top-3 right-4 text-white text-4xl hover:text-yellow-300"
+              aria-label="Close Kick Player Settings"
+            >
+              &times;
+            </button>
+
             <h1 className="text-4xl font-bold text-center text-yellow-400">How to Play</h1>
 
             <section className="space-y-2 text-lg">

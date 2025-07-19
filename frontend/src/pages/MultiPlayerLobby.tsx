@@ -22,6 +22,7 @@ import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
 import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
 import { useVoiceChatContext } from "../contexts/VoiceChatContext";
 import { FaUserSlash } from "react-icons/fa6";
+import { useSound } from "../hooks/sound";
 
 
 
@@ -49,6 +50,7 @@ const MultiplayerLobby = ({
   const navigate = useNavigate();
   const {socket} = useSocket();
   const {muteMap, setUserMuted} = useVoiceChatContext();
+  const playSelectSound = useSound("/sounds/select.wav");
 
   const {isModalOpen, confirmLeave, cancelLeave} = useNavigationBlocker(
     {
@@ -211,7 +213,20 @@ const MultiplayerLobby = ({
           <div className="absolute w-2 h-2 bg-white bottom-[6px] right-[6px] shadow-[0_0_6px_#ffffff]" />
 
           {/* Main Box */}
-          <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-6 space-y-6">
+          <div className="bg-[#2a2a2a] border-[6px] border-[#363636] shadow-[inset_0_0_8px_#000] p-8 space-y-6">
+
+            {/* Close Button */}
+            <button
+              onClick={()=> {
+                playSelectSound();
+                navigate("/")
+              }}
+              className="absolute top-3 right-4 text-white text-4xl hover:text-yellow-300"
+              aria-label="Close Kick Player Settings"
+            >
+              &times;
+            </button>
+
             <h1 className="text-3xl font-bold text-center text-yellow-400 tracking-wide font-cinzel">
               Multiplayer Lobby
             </h1>
@@ -444,13 +459,19 @@ const MultiplayerLobby = ({
             ) : (
               <div className="flex flex-col items-center justify-center gap-4">
                 <button
-                  onClick={() => setMode("create")}
+                  onClick={() => {
+                    playSelectSound();
+                    setMode("create")
+                  }}
                   className="bg-yellow-600 hover:bg-yellow-700 text-black  py-2 px-4 w-full rounded font-cinzel font-semibold"
                 >
                   Create Room
                 </button>
                 <button
-                  onClick={handlePublicRooms}
+                  onClick={()=> {
+                    playSelectSound();
+                    handlePublicRooms();
+                  }}
                   className="bg-zinc-900 hover:bg-zinc-700 text-white  py-2 px-4 w-full rounded font-cinzel font-semibold"
                 >
                   Join Room
