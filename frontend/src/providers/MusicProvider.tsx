@@ -1,20 +1,6 @@
-import React, { createContext, useContext, useState, useRef } from "react";
-import { Howl } from "howler";
+import { useState, useRef } from "react";
 import { attributions } from "../data/attributions";
-
-type MusicContextType = {
-  isPlaying: boolean;
-  currentTrackIndex: number;
-  volume: number;
-  play: () => void;
-  pause: () => void;
-  next: () => void;
-  prev: () => void;
-  setVolume: (v: number) => void;
-  currentTrack: typeof attributions[0];
-};
-
-const MusicContext = createContext<MusicContextType | undefined>(undefined);
+import { MusicContext } from "../contexts/MusicContext";
 
 export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
@@ -88,12 +74,4 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
       {children}
     </MusicContext.Provider>
   );
-};
-
-export const useMusic = () => {
-  const context = useContext(MusicContext);
-  if (!context) {
-    throw new Error("useMusic must be used within a MusicProvider");
-  }
-  return context;
 };

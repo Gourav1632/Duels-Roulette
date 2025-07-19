@@ -7,6 +7,7 @@ import { handlePlayerTurn } from "./rooms/turnManager";
 export function registerSocketHandlers(io: Server) {
   io.on("connection", (socket) => {
     console.log("⚡ New client connected:", socket.id);
+    socket.emit("connected", socket.id);
 
     socket.on("create_room", ({ host, maxPlayer, isPrivate, password, voiceChatEnabled }) => {
         const roomId = Math.random().toString(36).substring(2, 8);

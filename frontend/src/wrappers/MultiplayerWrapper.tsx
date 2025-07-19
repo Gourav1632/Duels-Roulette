@@ -1,9 +1,9 @@
 // RouteWrappers/MultiplayerWrapper.tsx
 import { useContext } from "react";
 import { Outlet } from "react-router-dom";
-import AppStateContext from "../context/AppStateContext";
-import { SocketProvider } from "../context/SocketContext";
-import { VoiceChatProvider } from "../context/VoiceChatContext";
+import AppStateContext from "../contexts/AppStateContext";
+import { SocketProvider } from "../providers/SocketProvider";
+import { VoiceChatProvider } from "../providers/VoiceChatProvider";
 
 const MultiplayerWrapper = () => {
   const state = useContext(AppStateContext);

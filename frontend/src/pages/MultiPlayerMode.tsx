@@ -3,7 +3,7 @@ import EventArea from '../components/GameUI/EventArea';
 import PlayingArea from '../components/GameUI/PlayingArea';
 import type { ActionMessage, ItemType, GameState, RoomData } from "../../../shared/types/types";
 import { emitPlayerAction, gameReady, leaveRoom, onGameUpdate } from "../utils/socket";
-import { useSocket } from "../context/SocketContext";
+import { useSocket } from "../contexts/SocketContext";
 import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
 import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
 import GameOverScreen from "../components/GameUI/GameOverScreen";
@@ -18,7 +18,7 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
   const [canDrink, setCanDrink] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [showEventArea, setShowEventArea] = useState<boolean>(true);
-  const socket = useSocket();
+  const {socket} = useSocket();
   const navigate = useNavigate();
 
   const { isModalOpen, confirmLeave, cancelLeave } = useNavigationBlocker(
@@ -264,6 +264,7 @@ return (
 <div className="w-[100%] lg:hidden relative bg-table-pattern">
   {game && game.players && myPlayerId &&
     <PlayingArea
+      room={room}
       handleDrink={handleDrink}
       handleStealItem={handleStealItem}
       canStealItem={canStealItem}
@@ -295,6 +296,7 @@ return (
       <div className={` w-[60%] hidden lg:flex relative bg-table-pattern`}>
         {game && game.players && myPlayerId && 
           <PlayingArea
+            room={room}
             handleDrink={handleDrink}
             handleStealItem={handleStealItem}
             canStealItem={canStealItem}

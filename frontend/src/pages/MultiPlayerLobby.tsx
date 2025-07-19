@@ -14,10 +14,11 @@ import {
 } from "../utils/socket";
 import { v4 as uuidv4 } from "uuid";
 import type { PublicRoomData, RoomData } from "../../../shared/types/types";
-import { useSocket } from "../context/SocketContext";
-import { FaMicrophone, FaMicrophoneSlash } from "react-icons/fa";
+import { useSocket } from "../contexts/SocketContext";
+import { FaMicrophone, FaMicrophoneSlash, FaVolumeMute, FaVolumeUp } from "react-icons/fa";
 import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
 import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
+import { useVoiceChatContext } from "../contexts/VoiceChatContext";
 
 
 
@@ -42,7 +43,9 @@ const MultiplayerLobby = ({
   const shouldBlockRef = useRef(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const navigate = useNavigate();
-  const socket = useSocket();
+  const {socket} = useSocket();
+  const {muteMap, setUserMuted} = useVoiceChatContext();
+
   const {isModalOpen, confirmLeave, cancelLeave} = useNavigationBlocker(
     {
     shouldBlock: () => mode === "create" && shouldBlockRef.current,
@@ -191,14 +194,40 @@ const MultiplayerLobby = ({
                 <div className="border border-zinc-700 p-4 rounded bg-zinc-800">
                   <h3 className="text-lg font-semibold mb-2">Players</h3>
                   <ul className="space-y-2">
-                    {room.players.map((player) => (
-                      <li key={player.id} className="flex items-center gap-2">
-                        <span>{player.name}</span>
-                        {player.id === room.host.id && (
-                          <span className="text-yellow-400 text-xs font-semibold">(host)</span>
+                    {room.players.map((player) =>{
+                      const isMuted = muteMap[player.socketId] ?? false;
+                      return (
+                      <li key={player.id} className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <span className={`${player.id === playerId ? 'text-green-400' : ''}`} >{player.name}</span>
+                          {player.id === room.host.id && (
+                            <span className="text-yellow-400 text-xs font-semibold">(host)</span>
+                          )}
+                        </div>
+                        {voiceChatEnabled && (
+                          player.id === playerId ? (
+                            <button
+                              onClick={() => setUserMuted(player.socketId, !isMuted)}
+                              className="text-green-400 hover:text-green-600"
+                              aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                              title={isMuted ? "Unmute microphone" : "Mute microphone"}
+                            >
+                              {isMuted ? <FaMicrophoneSlash /> : <FaMicrophone />}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setUserMuted(player.socketId, !isMuted)}
+                              className="text-yellow-400 hover:text-yellow-600"
+                              aria-label={isMuted ? "Unmute speaker" : "Mute speaker"}
+                              title={isMuted ? "Unmute speaker" : "Mute speaker"}
+                            >
+                              {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+                            </button>
+                          )
                         )}
                       </li>
-                    ))}
+                    )
+                    })}
                   </ul>
                 </div>
 

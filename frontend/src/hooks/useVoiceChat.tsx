@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import {useState, useCallback, useEffect, useRef } from "react";
 import { Socket } from "socket.io-client";
 import {
   sendVoiceAnswer,
@@ -13,12 +13,17 @@ import {
 
 export const useVoiceChat = (
   socket: Socket,
+  socketId: string | null,
   roomId: string,
   enabled: boolean
 ) => {
   const peersRef = useRef<Record<string, RTCPeerConnection>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
   const pendingCandidates = useRef<Record<string, RTCIceCandidateInit[]>>({});
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
+  const [muteMap, setMuteMap] = useState<{ [userId: string]: boolean }>({});
+  const [remoteVolume, setRemoteVolume] = useState<{ [userId: string]: number }>({});
+
 
   const createPeer = (userId: string, socket: Socket) => {
     const peer = new RTCPeerConnection({
@@ -51,7 +56,9 @@ export const useVoiceChat = (
       audio.srcObject = ev.streams[0];
       audio.autoplay = true;
       audio.muted = false;
+      audio.volume = remoteVolume[userId] ?? 1;
       audio.play().catch(() => {});
+      audioRefs.current[userId] = audio;
       document.body.appendChild(audio);
     };
 
@@ -65,7 +72,7 @@ export const useVoiceChat = (
   };
 
   useEffect(() => {
-    if (!enabled || !roomId) return;
+    if (!enabled || !roomId || !socketId) return;
 
     const getMediaAndSetup = async () => {
       onVoiceOffer(socket, async ({ from, offer }) => {
@@ -173,6 +180,7 @@ export const useVoiceChat = (
 
     getMediaAndSetup();
 
+
     return () => {
       Object.values(peersRef.current).forEach((p) => p.close());
       peersRef.current = {};
@@ -180,7 +188,13 @@ export const useVoiceChat = (
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
 
-      document.querySelectorAll("audio[id^='audio-']").forEach((a) => a.remove());
+      // cleanup
+      Object.entries(audioRefs.current).forEach(([ , audio]) => {
+        audio.pause();
+        audio.srcObject = null;
+        audio.remove();
+      });
+      audioRefs.current = {};
 
       socket.off("voice-offer");
       socket.off("voice-answer");
@@ -189,4 +203,37 @@ export const useVoiceChat = (
       socket.off("leave-voice");
     };
   }, [enabled, roomId, socket]);
+
+
+  const setUserMuted = useCallback((userId: string, muted: boolean) => {
+    if ( userId ===  socketId ) {
+      localStreamRef.current?.getAudioTracks().forEach(track => {
+        track.enabled = !muted;
+      });
+    } else {
+      const audio = audioRefs.current[userId];
+      if (audio) {
+        audio.muted = muted;
+      }
+    }
+
+    setMuteMap(prev => ({ ...prev, [userId]: muted }));
+  }, [socketId]);
+
+  const setUserVolume = useCallback((userId: string, volume: number) => {
+  const audio = audioRefs.current[userId];
+  if (audio) {
+    audio.volume = volume;
+    setRemoteVolume(prev => ({ ...prev, [userId]: volume }));
+  }
+}, []);
+
+
+
+    return {
+      muteMap,
+      setUserMuted,
+      remoteVolume,
+      setUserVolume,
+    };
 };

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ItemSelector from "./ItemSelector";
-import type { Contestant, ItemType, Score } from "../../../../shared/types/types";
+import type { Contestant, ItemType, RoomData, Score } from "../../../../shared/types/types";
 import Typewriter from 'typewriter-effect';
 import ItemHelp from "./ItemHelp";
 import MusicSelector from "./MusicSelector";
@@ -9,17 +9,20 @@ import { GiScrollUnfurled } from "react-icons/gi";
 import { GiMusicalNotes } from "react-icons/gi";
 import { IoMdHelp } from "react-icons/io";
 import { IoMdArrowDropdown } from "react-icons/io";
+import { FaMicrophone } from "react-icons/fa6";
+import VoiceSettings from "./VoiceSettings";
 
 
 
 
-const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, handleStealItem, handleDrink, currentPlayerId, scoreChart }: { canStealItem:boolean, canDrink:boolean, myPlayerId:string, players: Contestant[], handleUseItem: (item: ItemType, targetId: string) => void; handleStealItem:(item:ItemType, targetId:string) => void; handleDrink:(targetId:string)=> void; currentPlayerId : string; scoreChart : Score[]}) => {
+const PlayingArea = ({room,canStealItem,canDrink,myPlayerId, players, handleUseItem, handleStealItem, handleDrink, currentPlayerId, scoreChart }: {room?: RoomData, canStealItem:boolean, canDrink:boolean, myPlayerId:string, players: Contestant[], handleUseItem: (item: ItemType, targetId: string) => void; handleStealItem:(item:ItemType, targetId:string) => void; handleDrink:(targetId:string)=> void; currentPlayerId : string; scoreChart : Score[]}) => {
   const [pendingTargetSelect, setPendingTargetSelect] = useState<boolean>(false);
   const [itemSelected,setItemSelected] = useState<ItemType | null> (null);
   const [showHelp, setShowHelp] = useState(false);
   const playerCount = players.length;
   const [showMusicPopup, setShowMusicPopup] = useState(false);
   const [showScoreboard, setShowScoreboard] = useState(false);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
 
 
   const handleUseItemAndPlayer = (item: ItemType) => {
@@ -95,11 +98,21 @@ const PlayingArea = ({canStealItem,canDrink,myPlayerId, players, handleUseItem, 
         >
           <GiScrollUnfurled />
         </button>
+
+        {/* Voice settings */}
+        <button
+          onClick={() => setShowVoiceSettings(true)}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
+          title="View Scoreboard"
+        >
+          <FaMicrophone />
+        </button>
       </div>
 
       {showHelp && <ItemHelp onClose={() => setShowHelp(false)} />}
       {showMusicPopup && <MusicSelector onClose={() => setShowMusicPopup(false)} />}
       {showScoreboard && <Scoreboard scoreChart={scoreChart} onClose={() => setShowScoreboard(false)} />}
+      {room?.voiceChatEnabled && showVoiceSettings && <VoiceSettings onClose={()=> setShowVoiceSettings(false)} players={room?.players} myPlayerId={myPlayerId} />}
 
 
 

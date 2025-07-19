@@ -1,8 +1,8 @@
 // AppLayout.tsx
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import AppStateContext from "./context/AppStateContext";
-import { MusicProvider } from "./context/MusicContext";
+import AppStateContext from "./contexts/AppStateContext";
+import { MusicProvider } from "./providers/MusicProvider";
 import type { RoomData } from "../../shared/types/types";
 
 const AppLayout = () => {
