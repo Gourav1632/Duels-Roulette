@@ -11,6 +11,8 @@ import {
   leaveRoom,
   startGame,
   onGameStarted,
+  kickPlayer,
+  onKicked,
 } from "../utils/socket";
 import { v4 as uuidv4 } from "uuid";
 import type { PublicRoomData, RoomData } from "../../../shared/types/types";
@@ -19,6 +21,7 @@ import { FaMicrophone, FaMicrophoneSlash, FaVolumeMute, FaVolumeUp } from "react
 import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
 import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
 import { useVoiceChatContext } from "../contexts/VoiceChatContext";
+import { FaUserSlash } from "react-icons/fa6";
 
 
 
@@ -42,6 +45,7 @@ const MultiplayerLobby = ({
   const [voiceChatEnabled, setVoiceChatEnabled] = useState(false);
   const shouldBlockRef = useRef(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [hasBeenKicked, setHasBeenKicked] = useState(false);
   const navigate = useNavigate();
   const {socket} = useSocket();
   const {muteMap, setUserMuted} = useVoiceChatContext();
@@ -92,6 +96,17 @@ const MultiplayerLobby = ({
       setMode(roomData ? "create" : "default");
     });
 
+    onKicked(socket, ()=> {
+      setMode("default");
+      setRoom(null);
+      setVoiceChatEnabled(false);
+      setMyPlayerId(null);
+      setHasBeenKicked(true);
+      setTimeout(()=>{
+        setHasBeenKicked(false);
+      },5000)
+    })
+
     onPublicRoomsReceived(socket, (rooms) => {
       setPublicRooms(rooms);
     });
@@ -105,6 +120,7 @@ const MultiplayerLobby = ({
     });
 
     return () => {
+      socket.off("kicked");
       socket.off("game_started");
       socket.off("room_created");
       socket.off("room_update");
@@ -147,12 +163,17 @@ const MultiplayerLobby = ({
     setMode("default");
   }
 
+  function handleKick(targetPlayerId : string) {
+    if(room) kickPlayer(socket, room.id, targetPlayerId)
+  }
+
   function handleStartGame() {
     if (room) startGame(socket, room.id);
   }
 
   return (
     <div className="relative flex items-center justify-center w-full min-h-screen overflow-auto">
+
       <ConfirmLeaveModal
         isOpen={isModalOpen}
         onConfirm={confirmLeave}
@@ -168,6 +189,20 @@ const MultiplayerLobby = ({
 
       {/* Main Container */}
       <div className="relative z-20 max-w-3xl mx-auto p-6 text-white font-medievalsharp">
+
+       {/* Kick message  */}
+       
+      { hasBeenKicked && 
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 
+        w-full max-w-[500px] mx-4 
+        bg-[#2a2a2a] border-[6px] border-[#363636] p-4 
+        shadow-[inset_0_0_8px_#000] text-yellow-400 text-2xl sm:text-3xl 
+        font-medievalsharp flex items-center justify-center 
+        text-center z-10 ">
+        You have been kicked out of the room.
+      </div>
+      }
+
         <div className="relative">
           {/* Glowing Corners */}
           <div className="absolute w-2 h-2 bg-white top-[6px] left-[6px] shadow-[0_0_6px_#ffffff]" />
@@ -197,13 +232,17 @@ const MultiplayerLobby = ({
                     {room.players.map((player) =>{
                       const isMuted = muteMap[player.socketId] ?? false;
                       return (
-                      <li key={player.id} className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <span className={`${player.id === playerId ? 'text-green-400' : ''}`} >{player.name}</span>
-                          {player.id === room.host.id && (
-                            <span className="text-yellow-400 text-xs font-semibold">(host)</span>
-                          )}
-                        </div>
+                     <li key={player.id} className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className={`${player.id === playerId ? 'text-green-400' : ''}`}>
+                          {player.name}
+                        </span>
+                        {player.id === room.host.id && (
+                          <span className="text-yellow-400 text-xs font-semibold">(host)</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-4">
                         {voiceChatEnabled && (
                           player.id === playerId ? (
                             <button
@@ -225,7 +264,20 @@ const MultiplayerLobby = ({
                             </button>
                           )
                         )}
-                      </li>
+
+                        {/* 🔴 Kick button for host (excluding self) */}
+                        {room.host.id === playerId && player.id !== playerId && (
+                          <button
+                            onClick={() => handleKick(player.id)}
+                            className="text-red-500 hover:text-red-700"
+                            aria-label="Kick player"
+                            title="Kick player"
+                          >
+                            <FaUserSlash />
+                          </button>
+                        )}
+                      </div>
+                    </li>
                     )
                     })}
                   </ul>

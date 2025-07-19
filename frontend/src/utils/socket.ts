@@ -44,6 +44,14 @@ export const leaveRoom = (
   socket.emit("leave_room", { roomId, playerId });
 };
 
+export const kickPlayer = (
+  socket: Socket,
+  roomId: string,
+  targetPlayerId: string,
+) => {
+  socket.emit("kick_player", {roomId, targetPlayerId})
+};
+
 export const startGame = (socket: Socket, roomId: string) => {
   socket.emit("start_game", { roomId });
 };
@@ -89,6 +97,13 @@ export const onGameUpdate = (
 ) => {
   socket.on("game_update", callback);
 };
+
+export const onKicked = (
+  socket: Socket,
+  callback: () => void
+) => {
+  socket.on("kicked", callback);
+}
 
 export const onRoomUpdate = (
   socket: Socket,
@@ -167,6 +182,10 @@ export const onVoiceLeave = (
 
 
 export const clearSocketListeners = (socket: Socket) => {
+  socket.off("kicked");
+  socket.off("room_created");
+  socket.off("public_rooms");
+  socket.off("game_started");
   socket.off("game_update");
   socket.off("room_update");
   socket.off("error");

@@ -59,26 +59,75 @@ export function registerSocketHandlers(io: Server) {
     
     if (roomData?.voiceChatEnabled) socket.to(roomId).emit("leave-voice", socket.id);
     socket.leave(roomId);
-    
 
     io.to(roomId).emit("room_update", newRoomData ?? null);
     if (newRoomData?.gameState) {
-    if( newRoomData.gameState.players.length === 1) { 
-      const actionMessage: ActionMessage = {
-        type: "message",
-        result: `GAME OVER!`,
-      };
-      newRoomData.gameState.gameState = 'game_over';
-      io.to(roomId).emit("game_update", newRoomData.gameState, actionMessage, 5000);
-    } else {
-      const actionMessage: ActionMessage = {
-        type: "announce",
-        userId: playerId,
-        result: `${leavingPlayer} has left the game.`,
+      if( newRoomData.gameState.players.length === 1) { 
+        const actionMessage: ActionMessage = {
+          type: "message",
+          result: `GAME OVER!`,
         };
+        newRoomData.gameState.gameState = 'game_over';
         io.to(roomId).emit("game_update", newRoomData.gameState, actionMessage, 5000);
+      } else {
+        const actionMessage: ActionMessage = {
+          type: "announce",
+          userId: playerId,
+          result: `${leavingPlayer} has left the game.`,
+          };
+          io.to(roomId).emit("game_update", newRoomData.gameState, actionMessage, 5000);
+      }
     }
-    }
+    });
+
+    socket.on("kick_player", ({ roomId, targetPlayerId }) => {
+      const room = roomManager.getRoom(roomId);
+      if (!room) return;
+
+      // Check if requester is the host
+      const host = room.host;
+      const requestingPlayer = room.players.find((p: Player) => p.socketId === socket.id);
+      if (!requestingPlayer || requestingPlayer.id !== host.id) {
+        socket.emit("error", { message: "Only the host can kick players." });
+        return;
+      }
+
+      const targetPlayer = room.players.find((p: Player) => p.id === targetPlayerId);
+      if (!targetPlayer) return;
+
+      
+      // Remove them from the room
+      const newRoomData = roomManager.leaveRoom(roomId, targetPlayerId);
+
+      // Inform the kicked player (if connected)
+      io.to(targetPlayer.socketId).emit("kicked");
+
+      // remove voice 
+      if(room.voiceChatEnabled) io.to(roomId).emit("leave-voice", targetPlayer.socketId);
+
+      // remove from socket
+      io.sockets.sockets.get(targetPlayer.socketId)?.leave(roomId);
+
+      io.to(roomId).emit("room_update", roomManager.getRoom(roomId));
+
+      if (newRoomData?.gameState) {
+        if (newRoomData.gameState.players.length  === 1) {
+          const actionMessage: ActionMessage = {
+            type: "message",
+            result: `GAME OVER!`,
+          };
+          newRoomData.gameState.gameState = 'game_over';
+          io.to(roomId).emit("game_update", newRoomData.gameState, actionMessage, 5000);
+        } else {
+          const actionMessage: ActionMessage = {
+            type: "announce",
+            userId: requestingPlayer.id,
+            result: `${targetPlayer.name} has been kicked out.`,
+          };
+          io.to(roomId).emit("game_update", newRoomData.gameState, actionMessage, 5000);
+        }
+      }
+
     });
 
 

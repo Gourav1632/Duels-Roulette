@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import EventArea from '../components/GameUI/EventArea';
 import PlayingArea from '../components/GameUI/PlayingArea';
 import type { ActionMessage, ItemType, GameState, RoomData } from "../../../shared/types/types";
-import { emitPlayerAction, gameReady, leaveRoom, onGameUpdate } from "../utils/socket";
+import { emitPlayerAction, gameReady, leaveRoom, onGameUpdate, onKicked } from "../utils/socket";
 import { useSocket } from "../contexts/SocketContext";
 import { useNavigationBlocker } from "../hooks/useNavigationBlocker";
 import ConfirmLeaveModal from "../components/GameUI/ConfirmLeaveModal";
@@ -18,6 +18,7 @@ function MultiPlayerMode({room, myPlayerId}:{room: RoomData | null, myPlayerId: 
   const [canDrink, setCanDrink] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [showEventArea, setShowEventArea] = useState<boolean>(true);
+  const [hasBeenKicked, setHasBeenKicked] = useState<boolean>(false);
   const {socket} = useSocket();
   const navigate = useNavigate();
 
@@ -109,10 +110,15 @@ useEffect(() => {
     }
   });
 
+    onKicked(socket, ()=> {
+      setGame(null);
+      setHasBeenKicked(true);
+    })
 
   gameReady(socket,room.id);
 
   return () => {
+    socket.off("kicked");
     socket.off("game_update");
   };
 }, [room?.id, myPlayerId]);
@@ -190,12 +196,12 @@ if (game?.gameState === "game_over") {
   );
 }
 
-if (!room || !myPlayerId) {
+if (!room || !myPlayerId || hasBeenKicked) {
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-black text-white font-medievalsharp text-center px-6">
       <h1 className="text-4xl md:text-5xl font-bold mb-4 text-yellow-400">Oops!</h1>
       <p className="text-xl md:text-2xl mb-6">
-        Looks like you've entered an area you weren't supposed to.
+        {hasBeenKicked ? `You have been kicked out by the host.` : `Looks like you've entered an area you weren't supposed to.`}
       </p>
       <p className="text-md md:text-lg text-gray-300 mb-10">
         Please go back and join or create a new room to continue your journey.

@@ -9,8 +9,9 @@ import { GiScrollUnfurled } from "react-icons/gi";
 import { GiMusicalNotes } from "react-icons/gi";
 import { IoMdHelp } from "react-icons/io";
 import { IoMdArrowDropdown } from "react-icons/io";
-import { FaMicrophone } from "react-icons/fa6";
+import { FaMicrophone, FaUserSlash } from "react-icons/fa6";
 import VoiceSettings from "./VoiceSettings";
+import KickPlayerSettings from "./KickPlayerSettings";
 
 
 
@@ -23,6 +24,9 @@ const PlayingArea = ({room,canStealItem,canDrink,myPlayerId, players, handleUseI
   const [showMusicPopup, setShowMusicPopup] = useState(false);
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [showKickPlayerSettings,setShowKickPlayerSettings] = useState(false);
+
+
 
 
   const handleUseItemAndPlayer = (item: ItemType) => {
@@ -100,20 +104,35 @@ const PlayingArea = ({room,canStealItem,canDrink,myPlayerId, players, handleUseI
         </button>
 
         {/* Voice settings */}
+        {
+          room && room.voiceChatEnabled &&
         <button
           onClick={() => setShowVoiceSettings(true)}
           className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
-          title="View Scoreboard"
+          title="Voice Settings"
         >
           <FaMicrophone />
         </button>
+        }
+
+        {/* kick player settings */}
+        {
+          room && room.host.id === myPlayerId &&
+        <button
+          onClick={() => setShowKickPlayerSettings(true)}
+          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-all"
+          title="Kick Players"
+        >
+          <FaUserSlash />
+        </button>
+        }
       </div>
 
       {showHelp && <ItemHelp onClose={() => setShowHelp(false)} />}
       {showMusicPopup && <MusicSelector onClose={() => setShowMusicPopup(false)} />}
       {showScoreboard && <Scoreboard scoreChart={scoreChart} onClose={() => setShowScoreboard(false)} />}
-      {room?.voiceChatEnabled && showVoiceSettings && <VoiceSettings onClose={()=> setShowVoiceSettings(false)} players={room?.players} myPlayerId={myPlayerId} />}
-
+      {showVoiceSettings && room && <VoiceSettings onClose={()=> setShowVoiceSettings(false)} players={room.players} myPlayerId={myPlayerId} />}
+      {showKickPlayerSettings && room && <KickPlayerSettings roomId={room?.id} players={room.players} myPlayerId={myPlayerId} hostId={room.host.id} onClose={()=> setShowKickPlayerSettings(false)} />}
 
 
       {/* Background */}
