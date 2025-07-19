@@ -50,7 +50,6 @@ export function useTour({
     // Cleanup on unmount
     return () => {
       tourInstance?.cancel();
-      document.body.style.overflow = 'auto';
     };
   }, [tourInstance]);
 
